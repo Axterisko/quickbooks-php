@@ -2996,8 +2996,11 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 			$sql .= "\t" . $this->_generateFieldSchema($field, $def) . ', ' . "\n";
 		}
 
+        $engine = '';
+        if(preg_match('/mysql/',get_class($this))) $engine = ' ENGINE MyIsam';
+
 		return array(
-			'CREATE TABLE ' . ($if_not_exists?"IF NOT EXISTS ":"") . $name . ' ( ' . "\n" . substr($sql, 0, -3) . ' ); ',
+			'CREATE TABLE ' . ($if_not_exists?"IF NOT EXISTS ":"") . $name . ' ( ' . "\n" . substr($sql, 0, -3) . ' ) '.$engine.'; ',
 			);
 	}
 
@@ -3036,6 +3039,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_log_id';
 		$keys = array( 'quickbooks_ticket_id', 'batch' );
 		$uniques = array(  );
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 
@@ -3057,7 +3062,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_queue_id';
 		$keys = array( 'quickbooks_ticket_id', 'priority', array( 'qb_username', 'qb_action', 'ident', 'qb_status' ), 'qb_status' );
 		$uniques = array(  );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 
 		$table = $this->_mapTableName(QUICKBOOKS_DRIVER_SQL_RECURTABLE);
@@ -3076,7 +3082,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_recur_id';
 		$keys = array( array( 'qb_username', 'qb_action', 'ident' ), 'priority' );
 		$uniques = array(  );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 
 		$table = $this->_mapTableName(QUICKBOOKS_DRIVER_SQL_TICKETTABLE);
@@ -3094,7 +3101,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_ticket_id';
 		$keys = array( 'ticket' );
 		$uniques = array(  );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 
 		$table = $this->_mapTableName(QUICKBOOKS_DRIVER_SQL_USERTABLE);
@@ -3111,7 +3119,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'qb_username';
 		$keys = array(  );
 		$uniques = array(  );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 
 		/*
@@ -3129,7 +3138,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_ident_id';
 		$keys = array(  );
 		$uniques = array( array( 'qb_username', 'qb_object', 'unique_id' ) );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 		*/
 
@@ -3148,7 +3158,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_config_id';
 		$keys = array(  );
 		$uniques = array( array( 'qb_username', 'module', 'cfgkey' ) );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 
 		/*
@@ -3169,7 +3180,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_notify_id';
 		$keys = array(  );
 		$uniques = array(  );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 		*/
 
@@ -3191,7 +3203,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_connection_id';
 		$keys = array(  );
 		$uniques = array(  );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 		*/
 
@@ -3215,7 +3228,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_oauthv1_id';
 		$keys = array(  );
 		$uniques = array( array( 'app_username', 'app_tenant' ) );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 
 		// OAuth2
@@ -3238,7 +3252,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$primary = 'quickbooks_oauthv2_id';
 		$keys = array(  );
 		$uniques = array( array( 'app_tenant' ) );
-
+        if($config['quickbooks_sql_droptable'] ?? false)
+            $arr_sql[] = "DROP TABLE IF EXISTS {$table};";
 		$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($table, $def, $primary, $keys, $uniques));
 
 		//header('Content-Type: text/plain');
@@ -3363,6 +3378,9 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 				exit;
 				*/
 
+                if($config['quickbooks_sql_droptable'] ?? false)
+                $arr_sql[] = "DROP TABLE IF EXISTS {$name};";
+
 				$arr_sql = array_merge($arr_sql, $this->_generateCreateTable($name, $fields, $primary, $keys));
 			}
 		}
@@ -3370,7 +3388,7 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		// Run each CREATE TABLE statement...
 		foreach ($arr_sql as $sql)
 		{
-			if ($config['quickbooks_sql_debug'] or $config['quickbooks_sql_print'])
+			if ($config['quickbooks_sql_print'])
 			{
 				print($sql . "\n\n");
 			}
@@ -3379,7 +3397,8 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 				$errnum = 0;
 				$errmsg = '';
 
-				//print($sql);
+                if($config['quickbooks_sql_debug'] ?? false)
+				    print($sql);
 
 				$this->_query($sql, $errnum, $errmsg);
 			}
