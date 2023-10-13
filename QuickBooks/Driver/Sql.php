@@ -2997,7 +2997,7 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		}
 
         $engine = '';
-        if(preg_match('/mysql/',get_class($this))) $engine = ' ENGINE MyIsam';
+        if(preg_match('/mysql/ui',get_class($this))) $engine = ' ENGINE MyIsam';
 
 		return array(
 			'CREATE TABLE ' . ($if_not_exists?"IF NOT EXISTS ":"") . $name . ' ( ' . "\n" . substr($sql, 0, -3) . ' ) '.$engine.'; ',
