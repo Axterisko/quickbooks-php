@@ -829,7 +829,7 @@ class QuickBooks_Callbacks_SQL_Callbacks
 				$hooks = $callback_config['hooks'];
 			}
 
-			$Driver->log('CALLING THE HOOKS! ' . print_r($hooks, true), null, QUICKBOOKS_LOG_VERBOSE);
+//			$Driver->log('CALLING THE HOOKS! ' . print_r($hooks, true), null, QUICKBOOKS_LOG_VERBOSE);
 
 			// Call any hooks that occur when a record is updated
 			$hook_data = array(
@@ -1012,7 +1012,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 				$hooks = $callback_config['hooks'];
 			}
 
-			$Driver->log('CALLING THE HOOKS! ' . print_r($hooks, true), null, QUICKBOOKS_LOG_VERBOSE);
+//			$Driver->log('CALLING THE HOOKS! ' . print_r($hooks, true), null, QUICKBOOKS_LOG_VERBOSE);
 
 			// Call any hooks that occur when a record is updated
 			$hook_data = array(
@@ -4525,6 +4525,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 					switch ($schema_object->dataType($map))
 					{
+                        case 'QUANTYPE':
+                        case 'PRICETYPE':
 						case 'AMTTYPE':
 
 							$value = str_replace(',', '', number_format($value, 2));
@@ -4619,6 +4621,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 					switch ($schema_object->dataType($map))
 					{
+                        case 'QUANTYPE':
+                        case 'PRICETYPE':
 						case 'AMTTYPE':
 
 							$value = str_replace(',', '', number_format($value, 2));
@@ -4940,6 +4944,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 						switch ($schema_object->dataType($usePath . $Node->name() . ' ' . $map))
 						{
+                            case 'QUANTYPE':
+                            case 'PRICETYPE':
 							case 'AMTTYPE':
 
 								$value = str_replace(',', '', number_format($value, 2));
@@ -4991,6 +4997,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 						switch ($schema_object->dataType($usePath . $Node->name() . ' ' . $map))
 						{
+                            case 'QUANTYPE':
+                            case 'PRICETYPE':
 							case 'AMTTYPE':
 
 								$value = str_replace(',', '', number_format($value, 2));
