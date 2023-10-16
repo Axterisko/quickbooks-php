@@ -8744,6 +8744,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					'receivepayment' => 'Customer_ListID',
 					'purchaseorder' => 'ShipToEntity_ListID',
 					'salesreceipt' => 'Customer_ListID',
+                    'customer_shiptoaddress' => 'Customer_ListID',
 					)
 				),
 					/*
@@ -9244,6 +9245,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			'customer' => array(
 				'id_field' => 'ListID',
 				'children' => array(
+                    'customer_shiptoaddress' => 'Customer_ListID',
 					'dataext' => 'Entity_ListID'
 					)
 				),
@@ -10637,13 +10639,23 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$extra['TxnLineID'] = $Node->getChildDataAt('CreditMemoLineGroupRet TxnLineID');
 					}
 					break;
-				case 'customerret':
-					if (!isset($extra['EntityListID']))
-					{
-						$extra['EntityListID'] = $Node->getChildDataAt('CustomerRet ListID');
-					}
-					$extra['EntityType'] = 'Customer';
-					break;
+                case 'customerret':
+                    if (!isset($extra['EntityListID']))
+                    {
+                        $extra['EntityListID'] = $Node->getChildDataAt('CustomerRet ListID');
+                    }
+                    if (!isset($extra['Customer_ListID']))
+                    {
+                        $extra['Customer_ListID'] = $Node->getChildDataAt('CustomerRet ListID');
+                    }
+                    $extra['EntityType'] = 'Customer';
+                    break;
+                case 'customerret shiptoaddress':
+                    if (!isset($extra['Customer_ListID']))
+                    {
+                        $extra['Customer_ListID'] = $Node->getChildDataAt('CustomerRet ListID');
+                    }
+                    break;
 				case 'dataextdefret':
 					if (!isset($extra['DataExtName']))
 					{
@@ -10964,6 +10976,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					case 'BillingRatePerItemRet':
 					case 'CreditMemoLineRet':
 					case 'CreditMemoLineGroupRet':
+                    case 'ShipToAddress':
 					case 'DataExtRet':
 					case 'AssignToObject':
 					case 'DefaultUnit':
@@ -11171,6 +11184,9 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$objects[$map[0]]->set('CreditMemo_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('CreditMemo_CreditMemoLineGroup_TxnLineID', $extra['TxnLineID']);
 						break;
+                    case 'customer_shiptoaddress':
+                        $objects[$map[0]]->set('Customer_ListID', $extra['Customer_ListID']);
+                        break;
 					case 'dataext':
 
 						if (!empty($extra['EntityType']))
