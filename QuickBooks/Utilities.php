@@ -694,7 +694,7 @@ class QuickBooks_Utilities
 
             $decimal = (strlen($decimal) > 0) ? $decimal : 0;
             $number = floatval($numberint . "." . $decimal);
-            $number = number_format($number, 2, ",", "");
+            $number = number_format($number, 2, ".", "");
         }
 
         return $number;
