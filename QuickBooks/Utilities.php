@@ -678,24 +678,8 @@ class QuickBooks_Utilities
     static public function double($number = null)
     {
         if ($number)
-        {
-            $number = trim(strip_tags(urldecode($number)));
-            $number = preg_replace("/\,/", ".", $number);
+            return str_replace(',', '', number_format($number, 2));
 
-            $decimal = 0;
-
-            if ( strripos($number, ".") ) {
-                $decimal = preg_replace("/\./", "", substr($number, strripos($number, ".")));
-                $numberint = substr($number, 0, -strlen($decimal) - 1);
-                $numberint = preg_replace("/\./", "", $numberint);
-            } else {
-                $numberint = preg_replace("/\./", "", $number);
-            }
-
-            $decimal = (strlen($decimal) > 0) ? $decimal : 0;
-            $number = floatval($numberint . "." . $decimal);
-            $number = number_format($number, 2, ".", "");
-        }
 
         return $number;
     }

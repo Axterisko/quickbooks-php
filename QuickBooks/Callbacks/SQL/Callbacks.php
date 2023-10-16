@@ -5002,7 +5002,6 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 							case 'AMTTYPE':
 
                                 $value = QuickBooks_Utilities::double($value);
-
 								break;
 							case 'BOOLTYPE':
 
