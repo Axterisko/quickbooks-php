@@ -406,7 +406,7 @@ class QuickBooks_WebConnector_Handlers
 				$extra = null;
 				if ($next['extra'])
 				{
-					$extra = json_decode($next['extra']);
+					$extra = json_decode($next['extra'], true);
 				}
 
 				//print_r($next);
@@ -780,7 +780,7 @@ class QuickBooks_WebConnector_Handlers
 				$extra = '';
 				if ($next['extra'])
 				{
-					$extra = json_decode($next['extra']);
+					$extra = json_decode($next['extra'], true);
 				}
 
 				$err = '';
@@ -1360,7 +1360,7 @@ class QuickBooks_WebConnector_Handlers
 
 					if ($current['extra'])
 					{
-						$extra = json_decode($current['extra']);
+						$extra = json_decode($current['extra'], true);
 					}
 
 					$errmsg = null;
@@ -1444,7 +1444,7 @@ class QuickBooks_WebConnector_Handlers
 
 				if ($current['extra'])
 				{
-					$extra = json_decode($current['extra']);
+					$extra = json_decode($current['extra'],true);
 				}
 
 				// Update the status to success (no error occured)
