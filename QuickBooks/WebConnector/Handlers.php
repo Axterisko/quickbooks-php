@@ -1166,7 +1166,7 @@ class QuickBooks_WebConnector_Handlers
 		// Log the last error (for the ticket)
 		$this->_driver->errorLog($ticket, $errnum, $errmsg);
 		//$this->_driver->log('Attempting to handle error: ' . $errnum . ', ' . $errmsg);
-		$this->_log('Attempting to handle error: ' . $errnum . ', ' . $errmsg, $ticket, QUICKBOOKS_LOG_NORMAL);
+		$this->_log('Attempting to handle error: ' . $errnum . ', ' . $errmsg, $ticket, QUICKBOOKS_LOG_VERBOSE);
 
 		// By default, we don't want to continue if the error is not handled
 		$continue = false;
