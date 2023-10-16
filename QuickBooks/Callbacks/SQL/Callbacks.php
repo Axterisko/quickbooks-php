@@ -4529,7 +4529,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
                         case 'PRICETYPE':
 						case 'AMTTYPE':
 
-							$value = str_replace(',', '', number_format($value, 2));
+                            $value = QuickBooks_Utilities::double($value);
 
 							break;
 						case 'DATETYPE':
@@ -4625,7 +4625,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
                         case 'PRICETYPE':
 						case 'AMTTYPE':
 
-							$value = str_replace(',', '', number_format($value, 2));
+                            $value = QuickBooks_Utilities::double($value);
 
 							break;
 						case 'DATETYPE':
@@ -4948,7 +4948,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
                             case 'PRICETYPE':
 							case 'AMTTYPE':
 
-								$value = str_replace(',', '', number_format($value, 2));
+                                $value = QuickBooks_Utilities::double($value);
 
 								break;
 							case 'BOOLTYPE':
@@ -5001,7 +5001,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
                             case 'PRICETYPE':
 							case 'AMTTYPE':
 
-								$value = str_replace(',', '', number_format($value, 2));
+                                $value = QuickBooks_Utilities::double($value);
 
 								break;
 							case 'BOOLTYPE':
