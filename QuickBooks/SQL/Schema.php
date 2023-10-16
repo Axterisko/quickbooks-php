@@ -2157,10 +2157,14 @@ class QuickBooks_SQL_Schema
 				array( 'CreditMemo_LinkedTxn', 'CreditMemo_TxnID' ),
 				array( 'CreditMemo_LinkedTxn', 'LinkType' ),
 				),
-            'CustomerRet ShipToAddress' => 											array(
-                array( 'CreditMemo_LinkedTxn', 'FromTxnID' ),
-                array( 'CreditMemo_LinkedTxn', 'CreditMemo_TxnID' ),
-                array( 'CreditMemo_LinkedTxn', 'LinkType' ),
+            'CustomerRet ShipToAddress' => 									array(
+                array( 'Customer_ShipToAddress', 'Customer_ListID' ),
+            ),
+            'CustomerRet DataExtRet' => 												array(
+                array( 'DataExt', 'EntityType' ),
+                array( 'DataExt', 'TxnType' ),
+                array( 'DataExt', 'Entity_ListID' ),
+                array( 'DataExt', 'Txn_TxnID' ),
             ),
 			'DataExtDefRet AssignToObject' => 										array(
 				array( 'DataExtDef_AssignToObject', 'DataExtDef_OwnerID' ),
