@@ -4831,11 +4831,11 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			}
 			else if (strpos($child['table'], "dataext") !== false)
 			{
-                $Node = new QuickBooks_XML_Node("DataExt");
-                $Node->setChildDataAt($Node->name() . ' ' . 'OwnerID', '0', true);
-                $Node->setChildDataAt($Node->name() . ' ' . 'DataExtName', $child['data']->get("DataExtName"), true);
-                $Node->setChildDataAt($Node->name() . ' ' . 'DataExtValue', $child['data']->get("DataExtValue"), true);
-                $nodes[count($nodes)] = $Node;
+//                $Node = new QuickBooks_XML_Node("DataExt");
+//                $Node->setChildDataAt($Node->name() . ' ' . 'OwnerID', '0', true);
+//                $Node->setChildDataAt($Node->name() . ' ' . 'DataExtName', $child['data']->get("DataExtName"), true);
+//                $Node->setChildDataAt($Node->name() . ' ' . 'DataExtValue', $child['data']->get("DataExtValue"), true);
+//                $nodes[count($nodes)] = $Node;
 				continue;
 			}
 
