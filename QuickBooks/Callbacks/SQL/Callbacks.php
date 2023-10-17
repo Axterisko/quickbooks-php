@@ -8751,6 +8751,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					'purchaseorder' => 'ShipToEntity_ListID',
 					'salesreceipt' => 'Customer_ListID',
                     'customer_shiptoaddress' => 'Customer_ListID',
+                    'dataext' => 'Entity_ListID',
 					)
 				),
 					/*
