@@ -2192,7 +2192,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					';
 			if($DataExt->get("EntityType") != null)
 			{
-				$xml .= '<ListDataExtType>' . $DataExt->get("DataExtType") . '</ListDataExtType>
+				$xml .= '<ListDataExtType>' . $DataExt->get("EntityType") . '</ListDataExtType>
 						 <ListObjRef>
 						 	<ListID>' . $DataExt->get("Entity_ListID") . '</ListID>
 						 </ListObjRef>
@@ -2275,7 +2275,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					';
 			if($DataExt->get("EntityType") != null)
 			{
-				$xml .= '<ListDataExtType>' . $DataExt->get("DataExtType") . '</ListDataExtType>
+				$xml .= '<ListDataExtType>' . $DataExt->get("EntityType") . '</ListDataExtType>
 						 <ListObjRef>
 						 	<ListID>' . $DataExt->get("Entity_ListID") . '</ListID>
 						 </ListObjRef>
