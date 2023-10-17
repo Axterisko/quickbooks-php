@@ -488,7 +488,7 @@ class QuickBooks_SQL_Schema
 			'VendorCreditRet DataExtRet' => 															array( 'DataExt', array( 'EntityType', 'TxnType', 'Entity_ListID', 'Txn_TxnID' ) ),
 			'VendorTypeRet' => 																			array( 'VendorType', 'ListID' ),
 			'WorkersCompCodeRet' => 																	array( 'WorkersCompCode', 'ListID' ),
-            'DataExtRet' => 															                array( 'DataExt', array( 'EntityType', 'TxnType', 'Entity_ListID', 'Txn_TxnID' ) ),
+//            'DataExtRet' => 															                array( 'DataExt', array( 'EntityType', 'TxnType', 'Entity_ListID', 'Txn_TxnID' ) ),
 			);
 
 		if ($mode == QUICKBOOKS_SQL_SCHEMA_MAP_TO_SQL)
@@ -1060,8 +1060,8 @@ class QuickBooks_SQL_Schema
 
 			'CustomerMsgRet *' => 					array( 'CustomerMsg', '*' ),
 
-            'DataExtRet' =>						array( 'DataExt', null ),
-            'DataExtRet *' => 					array( 'DataExt', '*' ),
+//            'DataExtRet' =>						array( 'DataExt', null ),
+//            'DataExtRet *' => 					array( 'DataExt', '*' ),
 
 			'DataExtDefRet' =>						array( 'DataExtDef', null ),
 			'DataExtDefRet AssignToObject' => 		array( 'DataExtDef_AssignToObject', 'AssignToObject' ),
