@@ -11200,7 +11200,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 							$objects[$map[0]]->set('EntityType', $extra['EntityType']);
 							$objects[$map[0]]->set('Entity_ListID', $extra['EntityListID']);
 						}
-						else
+						elseif(!empty($extra['TxnType']))
 						{
 							$objects[$map[0]]->set('TxnType', $extra['TxnType']);
 							$objects[$map[0]]->set('Txn_TxnID', $extra['Txn_TxnID']);

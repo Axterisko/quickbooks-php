@@ -3638,6 +3638,7 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 		$sql .= " WHERE " . implode(' AND ', $wheres);
 
 		//print($sql);
+        $this->log($sql,null, QUICKBOOKS_LOG_DEVELOP);
 
 		$errnum = 0;
 		$errmsg = '';
@@ -3661,13 +3662,17 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 
 			$wheres[] = QUICKBOOKS_DRIVER_SQL_FIELD_DISCOVER . " IS NULL ";
 
-			$this->_query("
+            $sql = "
 				UPDATE
 					" . $this->_escape($table) . "
 				SET
 					" . QUICKBOOKS_DRIVER_SQL_FIELD_DISCOVER . " = " . QUICKBOOKS_DRIVER_SQL_FIELD_RESYNC . "
 				WHERE
-					" . implode(' AND ', $wheres), $errnum, $errmsg);
+					" . implode(' AND ', $wheres);
+
+            $this->log($sql,null, QUICKBOOKS_LOG_DEVELOP);
+
+            $this->_query($sql, $errnum, $errmsg);
 		}
 
 		return $return;
@@ -3797,6 +3802,7 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 			exit;
 		}
 		*/
+        $this->log($sql,null, QUICKBOOKS_LOG_DEVELOP);
 
 		$errnum = 0;
 		$errmsg = '';
@@ -3829,7 +3835,9 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 
 		$errnum = 0;
 		$errmsg = '';
-		return $this->_query($sql, $errnum, $errmsg);
+        $this->log($sql,null, QUICKBOOKS_LOG_DEVELOP);
+
+        return $this->_query($sql, $errnum, $errmsg);
 	}
 
 	/**
