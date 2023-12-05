@@ -227,6 +227,8 @@ class QuickBooks_WebConnector_Server_SQL extends QuickBooks_WebConnector_Server
 			'QuickBooks_Callbacks_SQL_Callbacks::InvoiceDeriveResponse' );			
 		*/
 		
+		if($map ?? false)
+            		$sql_map = $this->_merge($sql_map, $map, false);
 		//print_r($sql_map);
 		//exit;
 		
