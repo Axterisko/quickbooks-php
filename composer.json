@@ -1,23 +1,37 @@
 {
-    "name": "axterisko/quickbooks-php",
-    "type": "library",
-    "description": "QuickBooks DevKit with support for Intuit Anywhere, Intuit Partner Platform, Web Connector, QuickBooks Merchant Services, and more.",
-    "keywords": ["quickbooks","intuit","intuit anywhere","intuit partner platform","quickbooks web connector","qbxml","intuit data services","quickbooks merchant services","intuit merchant services","web connector"],
-    "homepage": "",
-    "license": "EPL-1.0",
-    "authors": [
-        {
-            "name": "Alex Pettiti",
-            "email": "assistenza@axterisko.it",
-            "homepage": "https://www.axterisko.it",
-            "role": "Developer"
-        }
-    ],
-    "require": {
-        "php": ">=7.0.0"
-    },
-
-    "autoload": {
-        "files": ["QuickBooks.php"]
-     }
+  "name": "axterisko/quickbooks-php",
+  "type": "library",
+  "description": "QuickBooks DevKit with support for Intuit Anywhere, Intuit Partner Platform, Web Connector, QuickBooks Merchant Services, and more.",
+  "keywords": [
+    "quickbooks",
+    "intuit",
+    "intuit anywhere",
+    "intuit partner platform",
+    "quickbooks web connector",
+    "qbxml",
+    "intuit data services",
+    "quickbooks merchant services",
+    "intuit merchant services",
+    "web connector"
+  ],
+  "license": "EPL-1.0",
+  "authors": [
+    {
+      "name": "Alex Pettiti",
+      "email": "assistenza@axterisko.it",
+      "homepage": "https://www.axterisko.it",
+      "role": "Developer"
+    }
+  ],
+  "require": {
+    "php": ">=7.0.0"
+  },
+  "autoload": {
+    "files": [
+      "QuickBooks.php"
+    ]
+  },
+  "scripts": {
+    "serve": "php -S 0.0.0.0:8000"
+  }
 }

@@ -386,7 +386,8 @@ class QuickBooks_SQL_Schema
 			'InventoryAdjustmentRet' => 																array( 'InventoryAdjustment', 'TxnID' ),
 			'InventoryAdjustmentRet InventoryAdjustmentLineRet' => 										array( 'InventoryAdjustment_InventoryAdjustmentLine', array( 'InventoryAdjustment_TxnID', 'TxnLineID' ) ),
 			'InventoryAdjustmentRet DataExtRet' => 														array( 'DataExt', array( 'EntityType', 'TxnType', 'Entity_ListID', 'Txn_TxnID' ) ),
-			'InvoiceRet' => 																			array( 'Invoice', 'TxnID' ),
+            'InventorySiteRet' =>																		array( 'InventorySite', 'ListID' ),
+            'InvoiceRet' => 																			array( 'Invoice', 'TxnID' ),
 			'InvoiceRet InvoiceLineRet' => 																array( 'Invoice_InvoiceLine', array( 'Invoice_TxnID', 'TxnLineID' ) ),
 			'InvoiceRet InvoiceLineRet DataExtRet' => 													array( 'DataExt', array( 'EntityType', 'TxnType', 'Entity_ListID', 'Txn_TxnID' ) ),
 			'InvoiceRet InvoiceLineGroupRet' => 														array( 'Invoice_InvoiceLineGroup', array( 'Invoice_TxnID', 'TxnLineID' ) ),
@@ -427,6 +428,7 @@ class QuickBooks_SQL_Schema
 			'ItemSalesTaxGroupRet DataExtRet' => 														array( 'DataExt', array( 'EntityType', 'TxnType', 'Entity_ListID', 'Txn_TxnID' ) ),
 			'ItemServiceRet' => 																		array( 'ItemService', 'ListID' ),
 			'ItemServiceRet DataExtRet' => 																array( 'DataExt', array( 'EntityType', 'TxnType', 'Entity_ListID', 'Txn_TxnID' ) ),
+            'ItemSiteRet' => 																		    array( 'ItemSite', 'ListID' ),
 			'ItemSubtotalRet' => 																		array( 'ItemSubtotal', 'ListID' ),
 			'ItemSubtotalRet DataExtRet' => 															array( 'DataExt', array( 'EntityType', 'TxnType', 'Entity_ListID', 'Txn_TxnID' ) ),
 			'JobTypeRet' => 																			array( 'JobType', 'ListID' ),
@@ -1223,6 +1225,16 @@ class QuickBooks_SQL_Schema
 
 			'InventoryAdjustmentRet *' => 				array( 'InventoryAdjustment', '*' ),
 
+
+            'InventorySiteRet' => 								array( 'InventorySite', null ),
+            'InventorySiteRet ParentSiteRef' => 				array( null, null ),
+            'InventorySiteRet ParentSiteRef *' => 			array( 'InventorySite', 'ParentSite_*' ),
+            'InventorySiteRet SiteAddress' => 				array( 'Invoice', null ),
+            'InventorySiteRet SiteAddress *' => 				array( 'InventorySite', 'SiteAddress_*' ),
+            'InventorySiteRet SiteAddressBlock' => 				array( 'InventorySite', null ),
+            'InventorySiteRet SiteAddressBlock *' => 				array( 'InventorySite', 'SiteAddressBlock_*' ),
+            'InventorySiteRet *' => 								array( 'InventorySite', '*' ),
+
 			'InvoiceRet' => 							array( 'Invoice', null ),
 			'InvoiceRet CustomerRef' => 				array( null, null ),
 			'InvoiceRet CustomerRef *' => 				array( 'Invoice', 'Customer_*' ),
@@ -1345,13 +1357,24 @@ class QuickBooks_SQL_Schema
 			'ItemServiceRet DataExtRet *' => 								array( 'DataExt', '*' ),
 			'ItemServiceRet *' => 											array( 'ItemService', '*' ),
 
+            'ItemSiteRet' => 											    array( 'ItemSite', null ),
+            'ItemSiteRet ItemInventoryAssemblyRef' => 						array( null, null ),
+            'ItemSiteRet ItemInventoryAssemblyRef *' => 					array( 'ItemSite', 'ItemInventoryAssembly_*' ),
+            'ItemSiteRet ItemInventoryRef' => 						        array( null, null ),
+            'ItemSiteRet ItemInventoryRef *' => 						    array( 'ItemSite', 'ItemInventory_*' ),
+            'ItemSiteRet InventorySiteRef' => 							    array( null, null ),
+            'ItemSiteRet InventorySiteRef *' => 							array( 'ItemSite', 'InventorySite_*' ),
+            'ItemSiteRet InventorySiteLocationRef' => 						array( null, null ),
+            'ItemSiteRet InventorySiteLocationRef *' => 				    array( 'ItemSite', 'InventorySiteLocation_*' ),
+
+            'ItemSiteRet *' => 											    array( 'ItemSite', '*' ),
+
+
 			'ItemNonInventoryRet' => 										array( 'ItemNonInventory', null ),
 			'ItemNonInventoryRet ParentRef' => 								array( null, null ),
 			'ItemNonInventoryRet ParentRef *' => 							array( 'ItemNonInventory', 'Parent_*' ),
 			'ItemNonInventoryRet UnitOfMeasureRef' => 						array( null, null ),
 			'ItemNonInventoryRet UnitOfMeasureRef *' => 					array( 'itemnoninventory', 'UnitOfMeasure_*' ),
-			'ItemNonInventoryRet SalesTaxCodeRef' => 						array( null, null ),
-			'ItemNonInventoryRet SalesTaxCodeRef' => 						array( 'itemnoninventory', 'SalesTaxCode_*' ),
 			'ItemNonInventoryRet UnitOfMeasureSetRef' => 					array( null, null ),
 			'ItemNonInventoryRet UnitOfMeasureSetRef *' => 					array( 'ItemNonInventory', 'UnitOfMeasureSet_*' ),
 			'ItemNonInventoryRet SalesTaxCodeRef' => 						array( null, null ),

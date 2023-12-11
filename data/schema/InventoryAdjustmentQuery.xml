@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
-<?qbxml version="7.0"?>
+<?qbxml version="16.0"?>
 <QBXML>
-<QBXMLMsgsRq onError="stopOnErrror">
+<QBXMLMsgsRq onError="stopOnError">
 <InventoryAdjustmentQueryRq metaData="ENUMTYPE" iterator="ENUMTYPE" iteratorID="UUIDTYPE">
 <!-- BEGIN OR -->
 <TxnID >IDTYPE</TxnID> <!-- optional, may repeat -->
@@ -77,6 +77,7 @@
 <IncludeRetElement >STRTYPE</IncludeRetElement> <!-- optional, may repeat -->
 <OwnerID >GUIDTYPE</OwnerID> <!-- optional, may repeat -->
 </InventoryAdjustmentQueryRq>
+
 <InventoryAdjustmentQueryRs statusCode="INTTYPE" statusSeverity="STRTYPE" statusMessage="STRTYPE" retCount="INTTYPE" iteratorRemainingCount="INTTYPE" iteratorID="UUIDTYPE">
 <InventoryAdjustmentRet> <!-- optional, may repeat -->
 <TxnID >IDTYPE</TxnID> <!-- required -->
@@ -88,6 +89,10 @@
 <ListID >IDTYPE</ListID> <!-- optional -->
 <FullName >STRTYPE</FullName> <!-- optional -->
 </AccountRef>
+<InventorySiteRef> <!-- optional -->
+<ListID >IDTYPE</ListID> <!-- optional -->
+<FullName >STRTYPE</FullName> <!-- optional -->
+</InventorySiteRef>
 <TxnDate >DATETYPE</TxnDate> <!-- required -->
 <RefNumber >STRTYPE</RefNumber> <!-- optional -->
 <CustomerRef> <!-- optional -->
@@ -99,32 +104,27 @@
 <FullName >STRTYPE</FullName> <!-- optional -->
 </ClassRef>
 <Memo >STRTYPE</Memo> <!-- optional -->
+<ExternalGUID >GUIDTYPE</ExternalGUID> <!-- optional -->
 <InventoryAdjustmentLineRet> <!-- optional, may repeat -->
 <TxnLineID >IDTYPE</TxnLineID> <!-- required -->
 <ItemRef> <!-- required -->
 <ListID >IDTYPE</ListID> <!-- optional -->
 <FullName >STRTYPE</FullName> <!-- optional -->
 </ItemRef>
-	
-	<QuantityDifference >QUANTYPE</QuantityDifference> <!-- required -->
-	<ValueDifference >AMTTYPE</ValueDifference> <!-- required -->
-
-	<QuantityAdjustment>
-		<NewQuantity>QUANTYPE</NewQuantity> 
-		<QuantityDifference>QUANTYPE</QuantityDifference>
-	</QuantityAdjustment>
-	
-	<ValueAdjustment>
-		<NewQuantity >QUANTYPE</NewQuantity> <!-- optional -->
-		<!-- OR -->
-		<QuantityDifference >QUANTYPE</QuantityDifference> <!-- optional -->
-		<!-- END OR -->
-		<!-- BEGIN OR -->
-		<NewValue >AMTTYPE</NewValue> <!-- optional -->
-		<!-- OR -->
-		<ValueDifference >AMTTYPE</ValueDifference> <!-- optional -->
-	</ValueAdjustment>
-	
+<!-- BEGIN OR -->
+<SerialNumber >STRTYPE</SerialNumber> <!-- optional -->
+<!-- SerialNumberAddedOrRemoved may have one of the following values: Added, Removed -->
+<SerialNumberAddedOrRemoved >ENUMTYPE</SerialNumberAddedOrRemoved> <!-- optional -->
+<!-- OR -->
+<LotNumber >STRTYPE</LotNumber> <!-- optional -->
+<!-- END OR -->
+<ExpirationDateForSerialLotNumber >STRTYPE</ExpirationDateForSerialLotNumber> <!-- optional -->
+<InventorySiteLocationRef> <!-- optional -->
+<ListID >IDTYPE</ListID> <!-- optional -->
+<FullName >STRTYPE</FullName> <!-- optional -->
+</InventorySiteLocationRef>
+<QuantityDifference >QUANTYPE</QuantityDifference> <!-- required -->
+<ValueDifference >AMTTYPE</ValueDifference> <!-- required -->
 </InventoryAdjustmentLineRet>
 <DataExtRet> <!-- optional, may repeat -->
 <OwnerID >GUIDTYPE</OwnerID> <!-- optional -->
