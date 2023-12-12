@@ -6527,6 +6527,48 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
     }
 
 
+    public static function ItemSitesImportRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
+    {
+        $xml = '';
+
+        if (!QuickBooks_Callbacks_SQL_Callbacks::_requiredVersion(10.0, $version))
+        {
+            return QUICKBOOKS_SKIP;
+        }
+
+        // min version 2.0
+        $xml .= '<?xml version="1.0" encoding="utf-8"?>
+			<?qbxml version="' . $version . '"?>
+			<QBXML>
+				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
+					<ItemSitesQueryRq requestID="' . $requestID . '" ' . QuickBooks_Callbacks_SQL_Callbacks::_buildIterator($extra) . '>
+						' . QuickBooks_Callbacks_SQL_Callbacks::_buildFilter($user, $action, $extra, false) . '
+					</ItemSitesQueryRq>
+				</QBXMLMsgsRq>
+			</QBXML>';
+
+        return $xml;
+    }
+
+    public static function ItemSitesImportResponse($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $xml, $idents, $config = array() )
+    {
+        $Parser = new QuickBooks_XML_Parser($xml);
+
+        $errnum = 0;
+        $errmsg = '';
+        $Doc = $Parser->parse($errnum, $errmsg);
+        $Root = $Doc->getRoot();
+
+        $List = $Root->getChildAt('QBXML QBXMLMsgsRs ItemSitesQueryRs');
+
+        if (!isset($extra['is_query_response']))
+        {
+            $extra['is_import_response'] = true;
+        }
+
+        QuickBooks_Callbacks_SQL_Callbacks::_QueryResponse('itemsites', $List, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+    }
+
 	public static function InvoiceImportRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
 	{
 		$xml = '';
