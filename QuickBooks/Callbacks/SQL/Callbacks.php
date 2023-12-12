@@ -6499,8 +6499,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			<QBXML>
 				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
 					<InventorySiteQueryRq requestID="' . $requestID . '" ' . QuickBooks_Callbacks_SQL_Callbacks::_buildIterator($extra) . '>
-						' . QuickBooks_Callbacks_SQL_Callbacks::_buildFilter($user, $action, $extra, true) . '
-						' . QuickBooks_Callbacks_SQL_Callbacks::_requiredVersionForElement(2.0, $version, '<OwnerID>0</OwnerID>') . '
+						' . QuickBooks_Callbacks_SQL_Callbacks::_buildFilter($user, $action, $extra, false) . '
+						' . QuickBooks_Callbacks_SQL_Callbacks::_requiredVersionForElement(10.0, $version, '<OwnerID>0</OwnerID>') . '
 					</InventorySiteQueryRq>
 				</QBXMLMsgsRq>
 			</QBXML>';
