@@ -3332,6 +3332,10 @@ abstract class QuickBooks_Driver_Sql extends QuickBooks_Driver
 
 				$fields = array_merge( $prepend, $fields );
 
+                if(in_array($table,['iteminventory','iteminventoryassembly'])){
+                    $fields['EarliestReceiptDate'] = array( QUICKBOOKS_DRIVER_SQL_DATETIME, null, 'null' );
+                }
+
 				$fields[QUICKBOOKS_DRIVER_SQL_FIELD_DISCOVER] = $ifield;
 				$fields[QUICKBOOKS_DRIVER_SQL_FIELD_RESYNC] = $ufield;
 				$fields[QUICKBOOKS_DRIVER_SQL_FIELD_MODIFY] = $mfield;
