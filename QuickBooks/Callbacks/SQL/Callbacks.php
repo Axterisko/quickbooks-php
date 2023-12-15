@@ -786,7 +786,7 @@ class QuickBooks_Callbacks_SQL_Callbacks
 					QuantityOnHand = " . (float) $item['QuantityOnHand'] . ", 
 					QuantityOnOrder = " . (float) $item['QuantityOnOrder'] . ", 
 					QuantityOnSalesOrder = " . (float) $item['QuantityOnSalesOrder'] . ", 
-					EarliestReceiptDate = " . $item['EarliestReceiptDate'] . ", 
+					EarliestReceiptDate = '" . $item['EarliestReceiptDate'] . "', 
 					qbsql_resync_datetime = '%s', 
 					qbsql_modify_timestamp = '%s'
 				WHERE
@@ -812,7 +812,7 @@ class QuickBooks_Callbacks_SQL_Callbacks
 						QuantityOnHand = " . (float) $item['QuantityOnHand'] . ", 
 						QuantityOnOrder = " . (float) $item['QuantityOnOrder'] . ", 
 						QuantityOnSalesOrder = " . (float) $item['QuantityOnSalesOrder'] . ",
-					    EarliestReceiptDate = " . $item['EarliestReceiptDate'] . " 
+					    EarliestReceiptDate = '" . $item['EarliestReceiptDate'] . "'
 					WHERE
 						FullName = '%s' ";
 
@@ -971,7 +971,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					QuantityOnHand = " . (float) $item['QuantityOnHand'] . ",
 					QuantityOnOrder = " . (float) $item['QuantityOnOrder'] . ",
 					QuantityOnSalesOrder = " . (float) $item['QuantityOnSalesOrder'] . ",
-					EarliestReceiptDate = " . $item['EarliestReceiptDate'] . ", 
+					EarliestReceiptDate = '" . $item['EarliestReceiptDate'] . "', 
 					qbsql_resync_datetime = '%s',
 					qbsql_modify_timestamp = '%s'
 				WHERE
@@ -997,7 +997,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						QuantityOnHand = " . (float) $item['QuantityOnHand'] . ",
 						QuantityOnOrder = " . (float) $item['QuantityOnOrder'] . ",
 						QuantityOnSalesOrder = " . (float) $item['QuantityOnSalesOrder'] . ",
-					    EarliestReceiptDate = " . $item['EarliestReceiptDate'] . " 
+					    EarliestReceiptDate = '" . $item['EarliestReceiptDate'] . "' 
 					WHERE
 						FullName = '%s' ";
 
