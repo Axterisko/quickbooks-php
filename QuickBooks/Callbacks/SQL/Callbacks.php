@@ -1596,6 +1596,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 	{
 		$xml = '';
 
+
 		$xml .= '<?xml version="1.0" encoding="utf-8"?>
 			<?qbxml version="' . $version . '"?>
 			<QBXML>
@@ -1613,6 +1614,29 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 	{
 		return QuickBooks_Callbacks_SQL_Callbacks::_deriveResponse('QBXML QBXMLMsgsRs ItemQueryRs', QUICKBOOKS_OBJECT_ITEM, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
 	}
+
+    public static function SalesOrderDeriveRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
+    {
+        $xml = '';
+
+        $xml .= '<?xml version="1.0" encoding="utf-8"?>
+			<?qbxml version="' . $version . '"?>
+			<QBXML>
+				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
+					<SalesOrderQueryRq requestID="' . $requestID . '">
+						<TxnID>' . $extra['TxnID'] . '</TxnID>
+						<IncludeLineItems>true</IncludeLineItems>
+					</SalesOrderQueryRq>
+				</QBXMLMsgsRq>
+			</QBXML>';
+
+        return $xml;
+    }
+
+    public static function SalesOrderDeriveResponse($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $xml, $idents, $config = array() )
+    {
+        return QuickBooks_Callbacks_SQL_Callbacks::_deriveResponse('QBXML QBXMLMsgsRs SalesOrderQueryRs', QUICKBOOKS_OBJECT_SALESORDER, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+    }
 
 	/**
 	 * Fetch derived fields for a customer (Balance, TotalBalance, etc.)
@@ -1686,6 +1710,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 		$List = $Root->getChildAt($path);
 		foreach ($List->children() as $Node)
 		{
+//            $Driver->log('Node: '.$Node->name());
 			switch ($type)
 			{
 				case QUICKBOOKS_OBJECT_ITEM:
@@ -1717,6 +1742,9 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 							'Parent_FullName' => $Node->getChildDataAt($xpath . ' ParentRef FullName'),
 							'IsActive' => (int) ($Node->getChildDataAt($xpath . ' IsActive') == 'true'),
 							'EditSequence' => $Node->getChildDataAt($xpath . ' EditSequence'),
+                            'QuantityOnHand' => $Node->getChildDataAt($xpath . ' QuantityOnHand'),
+                            'QuantityOnOrder' => $Node->getChildDataAt($xpath . ' QuantityOnOrder'),
+                            'QuantityOnSalesOrder' => $Node->getChildDataAt($xpath . ' QuantityOnSalesOrder'),
 							);
 
 						$Driver->log('Updating DERIVED ' . $xpath . ' fields: ' . print_r($arr, true) . ' where qbsql_id = ' . $ID, null, QUICKBOOKS_LOG_VERBOSE);
@@ -1731,6 +1759,46 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					}
 
 					break;
+                case QUICKBOOKS_OBJECT_SALESORDER:
+
+                    $arr = array(
+                        'IsFullyInvoiced' => (int) $Node->getChildDataAt('SalesOrderRet IsFullyInvoiced') == 'true',
+                        'IsManuallyClosed' => (int) $Node->getChildDataAt('SalesOrderRet IsManuallyClosed') == 'true',
+                        'IsToBeEmailed' =>  (int) $Node->getChildDataAt('SalesOrderRet IsToBeEmailed') == 'true',
+                        'IsToBePrinted' =>  (int) $Node->getChildDataAt('SalesOrderRet IsToBePrinted') == 'true',
+                    );
+
+                    $Driver->log('Updating DERIVED SALES ORDER fields: ' . print_r($arr, true) . ' where: ' . print_r($extra, true), null, QUICKBOOKS_LOG_VERBOSE);
+
+                    $Driver->update(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . 'salesorder',
+                        $arr,
+                        array( array( 'qbsql_id' => $ID ) ),
+                        true, 		// Don't mark as re-synced
+                        false, 		// Don't update the discov time
+                        true);		// Do mark it as re-derived
+
+                    $List = $Node->children('SalesOrderLineRet');
+
+                    foreach($List as $LineNode){
+                        $arr = [
+                            'SalesOrder_TxnID' =>  $Node->getChildDataAt('SalesOrderRet TxnID'),
+                            'TxnLineID' => $LineNode->getChildDataAt('SalesOrderLineRet TxnLineID'),
+                            'IsManuallyClosed' => (int) $LineNode->getChildDataAt('SalesOrderLineRet IsManuallyClosed') == 'true',
+                            'Invoiced' => $LineNode->getChildDataAt('SalesOrderLineRet Invoiced')
+                        ];
+                        $Driver->log('Updating DERIVED SALES ORDER LINE fields: ' . print_r($arr, true), null, QUICKBOOKS_LOG_VERBOSE);
+
+                        $Driver->update(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . 'salesorder_salesorderline',
+                            $arr,
+                            array( array( 'SalesOrder_TxnID' => $arr['SalesOrder_TxnID'] ),array( 'TxnLineID' => $arr['TxnLineID'] ) ),
+                            true, 		// Don't mark as re-synced
+                            false, 		// Don't update the discov time
+                            true);		// Do mark it as re-derived
+                    }
+
+
+
+                    break;
 				case QUICKBOOKS_OBJECT_VENDOR:
 
 					// Vendor.
@@ -9836,20 +9904,13 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			}
 			*/
 
-			// This keeps track of whether or not we're ignoring this entire batch of UPDATES/INSERTS
+			// This keeps track of whether we're ignoring this entire batch of UPDATES/INSERTS
 			$ignore_this_and_its_children = false;
 
 			foreach ($objects as $key => $object)
 			{
 				$Object =& $object;
-
-				if ($ignore_this_and_its_children)
-				{
-					// If we're supposed to ignore this object and it's children, then just continue
-					continue;
-				}
-
-				$table = $Object->table();
+                $table = $Object->table();
 				$path = $Object->path();
 				$map = array();
 				QuickBooks_SQL_Schema::mapPrimaryKey($path, QUICKBOOKS_SQL_SCHEMA_MAP_TO_SQL, $map);
@@ -9859,6 +9920,26 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 				{
 					$map = array( 'qb_preferences', 'qbsql_external_id' );
 				}
+
+                if ($ignore_this_and_its_children)
+                {
+                    if ($table and
+                        count($map) and
+                        $map[0] and
+                        $map[1]) {
+                        $multipart = array();
+                        if (is_array($map[1])) {
+                            foreach ($map[1] as $table_name) {
+                                $multipart[$table_name] = $object->get($table_name);
+                            }
+                        } else {
+                            $multipart[$map[1]] = $object->get($map[1]);
+                        }
+                        // If we're supposed to ignore this object and it's children, then just continue
+                        $Driver->log('Skipping UPDATE: ' . $table . ': ' . print_r($object, true) . ', where: ' . print_r($multipart, true), null, QUICKBOOKS_LOG_DEVELOP);
+                    }
+                    continue;
+                }
 
 				//print_r($Object);
 				//print_r($path);
@@ -9896,6 +9977,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					{
 						$multipart[ QUICKBOOKS_DRIVER_SQL_FIELD_ID ] = $ID;
 					}
+
 
 					$hooks = array();
 					if (isset($callback_config['hooks']))
@@ -10057,6 +10139,24 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 							$ignore_this_and_its_children = true;
 						}
 
+                        if($ignore_this_and_its_children){
+
+                            switch($table){
+                                case 'salesorder':
+
+                                    break;
+                                case 'salesorderline':
+
+                                    break;
+                                case 'iteminventory':
+                                case 'iteminventoryassembly':
+
+                                    break;
+                            }
+
+                        }
+
+
 						if ($callback_config['mode'] == QuickBooks_WebConnector_Server_SQL::MODE_WRITEONLY)
 						{
 							// In WRITE-ONLY mode, we only write changes to QuickBooks, but never read them back
@@ -10115,7 +10215,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						}
 						else
 						{
-							//$Driver->log('Skipping UPDATE: ' . $table . ': ' . print_r($object, true) . ', where: ' . print_r($multipart, true), null, QUICKBOOKS_LOG_DEVELOP);
+                            $Driver->log('Skipping UPDATE: ' . $table . ': ' . print_r($object, true) . ', where: ' . print_r($multipart, true), null, QUICKBOOKS_LOG_DEVELOP);
 						}
 
 						if ($actually_do_update and isset($extra['is_add_response']))
@@ -10237,7 +10337,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						}
 						else
 						{
-							//$Driver->log('Skipping INSERT: ' . $table . ': ' . print_r($object, true), null, QUICKBOOKS_LOG_DEVELOP);
+							$Driver->log('Skipping INSERT: ' . $table . ': ' . print_r($object, true), null, QUICKBOOKS_LOG_DEVELOP);
 						}
 					}
 
@@ -10321,8 +10421,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 		// Invoice.		IsPending, AppliedAmount, BalanceRemaining, IsPaid
 
 		//$Driver->log('Running triggered actions for: [' . $table . ']', null, QUICKBOOKS_LOG_DEBUG);
-
-		switch (strtolower($table))
+        $table = strtolower($table);
+		switch ($table)
 		{
 			case 'receivepayment_appliedtotxn':
 
@@ -10352,15 +10452,17 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 				break;
 			case 'receivepayment':
 			case 'invoice':
+                // A customer has an updated invoice or payment, so the Customer Balance changed
+				$Driver->log('Running '.$table.' triggered actions: derive customer', null, QUICKBOOKS_LOG_DEBUG);
+				$Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_CUSTOMER, null, true, $priority,array( 'ListID' => $Object->get('Customer_ListID') ) );
 
-				// A customer has an updated invoice or payment, so the Customer Balance changed
+                if($table == 'invoice' && ($arr = $Driver->get(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . 'invoice_linkedtxn', [
+                        'Invoice_TxnID' => $Object->get('TxnID'),
+                        'TxnType' => 'SalesOrder'
+                    ]))){
+                    $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_SALESORDER, null, true, $priority, array( 'TxnID' => $arr['ToTxnID'] ) );
+                }
 
-				/*
-				$Driver->log('Running triggered actions: derive customer', null, QUICKBOOKS_LOG_DEBUG);
-
-				$Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_CUSTOMER, null, true, $priority,
-					array( 'ListID' => $Object->get('Customer_ListID') ) );
-				*/
 
 				break;
 			case 'bill':
@@ -10369,9 +10471,34 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 				// We paid a bill, so the Vendor Balance has changed
 
-
-
 				break;
+            case 'salesorder':
+                $Driver->log('Running salesorder triggered actions: derive item', null, QUICKBOOKS_LOG_DEBUG);
+
+                $ArrListID = [];
+
+                $res = $Driver->query(sprintf("SELECT DISTINCT Item_ListID FROM ".QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . "salesorder_salesorderline WHERE SalesOrder_TxnID = \"%s\" ORDER BY qbsql_id ASC",$Object->get('TxnID')), $errnum, $errmsg);
+                while ($arr = $Driver->fetch($res)) $ArrListID[] = $arr['Item_ListID'];
+                $res = $Driver->query(sprintf("SELECT DISTINCT Item_ListID FROM ".QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . "salesorder_salesorderlinegroup_salesorderline WHERE SalesOrder_TxnID = \"%s\" ORDER BY qbsql_id ASC",$Object->get('TxnID')), $errnum, $errmsg);
+                while ($arr = $Driver->fetch($res)) $ArrListID[] = $arr['Item_ListID'];
+
+                foreach(array_unique($ArrListID) as $ListID)
+                    $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_ITEM, null, true, $priority, array( 'ListID' => $ListID ) );
+                break;
+
+            case 'purchaseorder':
+                $Driver->log('Running purchaseorder triggered actions: derive item', null, QUICKBOOKS_LOG_DEBUG);
+
+                $ArrListID = [];
+
+                $res = $Driver->query(sprintf("SELECT DISTINCT Item_ListID FROM ".QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . "purchaseorder_purchaseorderline WHERE PurchaseOrder_TxnID = \"%s\" ORDER BY qbsql_id ASC",$Object->get('TxnID')), $errnum, $errmsg);
+                while ($arr = $Driver->fetch($res)) $ArrListID[] = $arr['Item_ListID'];
+                $res = $Driver->query(sprintf("SELECT DISTINCT Item_ListID FROM ".QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . "purchaseorder_purchaseorderlinegroup_purchaseorderline WHERE PurchaseOrder_TxnID = \"%s\" ORDER BY qbsql_id ASC",$Object->get('TxnID')), $errnum, $errmsg);
+                while ($arr = $Driver->fetch($res)) $ArrListID[] = $arr['Item_ListID'];
+
+                foreach(array_unique($ArrListID) as $ListID)
+                    $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_ITEM, null, true, $priority, array( 'ListID' => $ListID ) );
+                break;
 		}
 	}
 
@@ -10522,6 +10649,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 		$map = array(
 			'invoice_invoiceline' => 'Invoice_TxnID',
 			'purchaseorder_purchaseorderline' => 'PurchaseOrder_TxnID',
+            'salesorder_salesorderline' => 'SalesOrder_TxnID',
 			'salesreceipt_salesreceiptline' => 'SalesReceipt_TxnID',
 			'estimate_estimateline' => 'Estimate_TxnID',
 			'bill_itemline' => 'Bill_TxnID',
@@ -10532,6 +10660,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 		{
 			case 'invoice_invoiceline':
 			case 'purchaseorder_purchaseorderline':
+            case 'salesorder_salesorderline':
 			case 'salesreceipt_salesreceiptline':
 			case 'estimate_estimateline':
 			case 'bill_itemline':
@@ -10665,7 +10794,10 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					$extra['TxnType'] = 'Check';
 
 					break;
-				case 'checkret itemgrouplineret':
+                case 'creditcardchargeret itemgrouplineret':
+                case 'creditcardcreditret itemgrouplineret':
+                case 'vendorcreditret itemgrouplineret':
+                case 'checkret itemgrouplineret':
 
 					if (!isset($extra['TxnLineID']))
 					{
@@ -10694,15 +10826,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					$extra['TxnType'] = 'CreditCardCharge';
 
 					break;
-				case 'creditcardchargeret itemgrouplineret':
-
-					if (!isset($extra['TxnLineID']))
-					{
-						$extra['TxnLineID'] = $Node->getChildDataAt('ItemGroupLineRet TxnLineID');
-					}
-
-					break;
-				case 'creditcardcreditret':
+                case 'creditcardcreditret':
 					if (!isset($extra['TxnID']))
 					{
 						$extra['TxnID'] = $Node->getChildDataAt('CreditCardCreditRet TxnID');
@@ -10710,13 +10834,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					$extra['Txn_TxnID'] = $extra['TxnID'];
 					$extra['TxnType'] = 'CreditCardCredit';
 					break;
-				case 'creditcardcreditret itemgrouplineret':
-					if (!isset($extra['TxnLineID']))
-					{
-						$extra['TxnLineID'] = $Node->getChildDataAt('ItemGroupLineRet TxnLineID');
-					}
-					break;
-				case 'creditmemoret':
+                case 'creditmemoret':
 					if (!isset($extra['TxnID']))
 					{
 						$extra['TxnID'] = $Node->getChildDataAt('CreditMemoRet TxnID');
@@ -11043,13 +11161,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					$extra['Txn_TxnID'] = $extra['TxnID'];
 					$extra['TxnType'] = 'VendorCredit';
 					break;
-				case 'vendorcreditret itemgrouplineret':
-					if (!isset($extra['TxnLineID']))
-					{
-						$extra['TxnLineID'] = $Node->getChildDataAt('ItemGroupLineRet TxnLineID');
-					}
-					break;
-				case 'workerscompcoderet':
+                case 'workerscompcoderet':
 					if (!isset($extra['ListID']))
 					{
 						$extra['ListID'] = $Node->getChildDataAt('WorkersCompCodeRet ListID');
@@ -11202,16 +11314,12 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('Bill_TxnID', $extra['TxnID']);
 						break;
-					case 'bill_expenseline':
+                    case 'bill_itemline':
+                    case 'bill_itemgroupline':
+                    case 'bill_expenseline':
 						$objects[$map[0]]->set('Bill_TxnID', $extra['TxnID']);
 						break;
-					case 'bill_itemline':
-						$objects[$map[0]]->set('Bill_TxnID', $extra['TxnID']);
-						break;
-					case 'bill_itemgroupline':
-						$objects[$map[0]]->set('Bill_TxnID', $extra['TxnID']);
-						break;
-					case 'bill_itemgroupline_itemline':
+                    case 'bill_itemgroupline_itemline':
 						$objects[$map[0]]->set('Bill_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('Bill_ItemGroupLine_TxnLineID', $extra['TxnLineID']);
 						break;
@@ -11219,45 +11327,33 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('Check_TxnID', $extra['TxnID']);
 						break;
-					case 'check_expenseline':
+                    case 'check_itemline':
+                    case 'check_itemgroupline':
+                    case 'check_expenseline':
 						$objects[$map[0]]->set('Check_TxnID', $extra['TxnID']);
 						break;
-					case 'check_itemline':
-						$objects[$map[0]]->set('Check_TxnID', $extra['TxnID']);
-						break;
-					case 'check_itemgroupline':
-						$objects[$map[0]]->set('Check_TxnID', $extra['TxnID']);
-						break;
-					case 'check_itemgroupline_itemline':
+                    case 'check_itemgroupline_itemline':
 						$objects[$map[0]]->set('Check_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('Check_ItemGroupLine_TxnLineID', $extra['TxnLineID']);
 						break;
 					case 'company_subscribedservices_service':
 						$objects[$map[0]]->set('Company_CompanyName', $extra['CompanyName']);
 						break;
-					case 'creditcardcharge_expenseline':
+                    case 'creditcardcharge_itemline':
+                    case 'creditcardcharge_itemgroupline':
+                    case 'creditcardcharge_expenseline':
 						$objects[$map[0]]->set('CreditCardCharge_TxnID', $extra['TxnID']);
 						break;
-					case 'creditcardcharge_itemline':
-						$objects[$map[0]]->set('CreditCardCharge_TxnID', $extra['TxnID']);
-						break;
-					case 'creditcardcharge_itemgroupline':
-						$objects[$map[0]]->set('CreditCardCharge_TxnID', $extra['TxnID']);
-						break;
-					case 'creditcardcharge_itemgroupline_itemline':
+                    case 'creditcardcharge_itemgroupline_itemline':
 						$objects[$map[0]]->set('CreditCardCharge_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('CreditCardCharge_ItemGroupLine_TxnLineID', $extra['TxnLineID']);
 						break;
-					case 'creditcardcredit_expenseline':
+                    case 'creditcardcredit_itemline':
+                    case 'creditcardcredit_itemgroupline':
+                    case 'creditcardcredit_expenseline':
 						$objects[$map[0]]->set('CreditCardCredit_TxnID', $extra['TxnID']);
 						break;
-					case 'creditcardcredit_itemline':
-						$objects[$map[0]]->set('CreditCardCredit_TxnID', $extra['TxnID']);
-						break;
-					case 'creditcardcredit_itemgroupline':
-						$objects[$map[0]]->set('CreditCardCredit_TxnID', $extra['TxnID']);
-						break;
-					case 'creditcardcredit_itemgroupline_itemline':
+                    case 'creditcardcredit_itemgroupline_itemline':
 						$objects[$map[0]]->set('CreditCardCredit_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('CreditCardCredit_ItemGroupLine_TxnLineID', $extra['TxnLineID']);
 						break;
@@ -11265,13 +11361,11 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('CreditMemo_TxnID', $extra['TxnID']);
 						break;
-					case 'creditmemo_creditmemoline':
+                    case 'creditmemo_creditmemolinegroup':
+                    case 'creditmemo_creditmemoline':
 						$objects[$map[0]]->set('CreditMemo_TxnID', $extra['TxnID']);
 						break;
-					case 'creditmemo_creditmemolinegroup':
-						$objects[$map[0]]->set('CreditMemo_TxnID', $extra['TxnID']);
-						break;
-					case 'creditmemo_creditmemolinegroup_creditmemoline':
+                    case 'creditmemo_creditmemolinegroup_creditmemoline':
 						$objects[$map[0]]->set('CreditMemo_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('CreditMemo_CreditMemoLineGroup_TxnLineID', $extra['TxnLineID']);
 						break;
@@ -11315,13 +11409,11 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('Estimate_TxnID', $extra['TxnID']);
 						break;
-					case 'estimate_estimateline':
+                    case 'estimate_estimatelinegroup':
+                    case 'estimate_estimateline':
 						$objects[$map[0]]->set('Estimate_TxnID', $extra['TxnID']);
 						break;
-					case 'estimate_estimatelinegroup':
-						$objects[$map[0]]->set('Estimate_TxnID', $extra['TxnID']);
-						break;
-					case 'estimate_estimatelinegroup_estimateline':
+                    case 'estimate_estimatelinegroup_estimateline':
 						$objects[$map[0]]->set('Estimate_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('Estimate_EstimateLineGroup_TxnLineID', $extra['TxnLineID']);
 						break;
@@ -11332,13 +11424,11 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('Invoice_TxnID', $extra['TxnID']);
 						break;
-					case 'invoice_invoiceline':
+                    case 'invoice_invoicelinegroup':
+                    case 'invoice_invoiceline':
 						$objects[$map[0]]->set('Invoice_TxnID', $extra['TxnID']);
 						break;
-					case 'invoice_invoicelinegroup':
-						$objects[$map[0]]->set('Invoice_TxnID', $extra['TxnID']);
-						break;
-					case 'invoice_invoicelinegroup_invoiceline':
+                    case 'invoice_invoicelinegroup_invoiceline':
 						$objects[$map[0]]->set('Invoice_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('Invoice_InvoiceLineGroup_TxnLineID', $extra['TxnLineID']);
 						break;
@@ -11352,42 +11442,34 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('ItemReceipt_TxnID', $extra['TxnID']);
 						break;
-					case 'itemreceipt_expenseline':
+                    case 'itemreceipt_itemline':
+                    case 'itemreceipt_itemgroupline':
+                    case 'itemreceipt_expenseline':
 						$objects[$map[0]]->set('ItemReceipt_TxnID', $extra['TxnID']);
 						break;
-					case 'itemreceipt_itemline':
-						$objects[$map[0]]->set('ItemReceipt_TxnID', $extra['TxnID']);
-						break;
-					case 'itemreceipt_itemgroupline':
-						$objects[$map[0]]->set('ItemReceipt_TxnID', $extra['TxnID']);
-						break;
-					case 'itemreceipt_itemgroupline_itemline':
+                    case 'itemreceipt_itemgroupline_itemline':
 						$objects[$map[0]]->set('ItemReceipt_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('ItemReceipt_ItemGroupLine_TxnLineID', $extra['TxnLineID']);
 						break;
 					case 'itemsalestaxgroup_itemsalestax':
 						$objects[$map[0]]->set('ItemSalesTaxGroup_ListID', $extra['ListID']);
 						break;
-					case 'journalentry_journalcreditline':
+                    case 'journalentry_journaldebitline':
+                    case 'journalentry_journalcreditline':
 						$objects[$map[0]]->set('JournalEntry_TxnID', $extra['TxnID']);
 						break;
-					case 'journalentry_journaldebitline':
-						$objects[$map[0]]->set('JournalEntry_TxnID', $extra['TxnID']);
-						break;
-					case 'pricelevel_pricelevelperitem':
+                    case 'pricelevel_pricelevelperitem':
 						$objects[$map[0]]->set('PriceLevel_ListID', $extra['ListID']);
 						break;
 					case 'purchaseorder_linkedtxn':
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('PurchaseOrder_TxnID', $extra['TxnID']);
 						break;
-					case 'purchaseorder_purchaseorderline':
+                    case 'purchaseorder_purchaseorderlinegroup':
+                    case 'purchaseorder_purchaseorderline':
 						$objects[$map[0]]->set('PurchaseOrder_TxnID', $extra['TxnID']);
 						break;
-					case 'purchaseorder_purchaseorderlinegroup':
-						$objects[$map[0]]->set('PurchaseOrder_TxnID', $extra['TxnID']);
-						break;
-					case 'purchaseorder_purchaseorderlinegroup_purchaseorderline':
+                    case 'purchaseorder_purchaseorderlinegroup_purchaseorderline':
 						$objects[$map[0]]->set('PurchaseOrder_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('PurchaseOrder_PurchaseOrderLineGroup_TxnLineID', $extra['TxnLineID']);
 						break;
@@ -11400,46 +11482,36 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('SalesOrder_TxnID', $extra['TxnID']);
 						break;
-					case 'salesorder_salesorderline':
+                    case 'salesorder_salesorderlinegroup':
+                    case 'salesorder_salesorderline':
 						$objects[$map[0]]->set('SalesOrder_TxnID', $extra['TxnID']);
 						break;
-					case 'salesorder_salesorderlinegroup':
-						$objects[$map[0]]->set('SalesOrder_TxnID', $extra['TxnID']);
-						break;
-					case 'salesorder_salesorderlinegroup_salesorderline':
+                    case 'salesorder_salesorderlinegroup_salesorderline':
 						$objects[$map[0]]->set('SalesOrder_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('SalesOrder_SalesOrderLineGroup_TxnLineID', $extra['TxnLineID']);
 						break;
-					case 'salesreceipt_salesreceiptline':
+                    case 'salesreceipt_salesreceiptlinegroup':
+                    case 'salesreceipt_salesreceiptline':
 						$objects[$map[0]]->set('SalesReceipt_TxnID', $extra['TxnID']);
 						break;
-					case 'salesreceipt_salesreceiptlinegroup':
-						$objects[$map[0]]->set('SalesReceipt_TxnID', $extra['TxnID']);
-						break;
-					case 'salesreceipt_salesreceiptlinegroup_salesreceiptline':
+                    case 'salesreceipt_salesreceiptlinegroup_salesreceiptline':
 						$objects[$map[0]]->set('SalesReceipt_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('SalesReceipt_SalesReceiptLineGroup_TxnLineID', $extra['TxnLineID']);
 						break;
-					case 'unitofmeasureset_relatedunit':
+                    case 'unitofmeasureset_defaultunit':
+                    case 'unitofmeasureset_relatedunit':
 						$objects[$map[0]]->set('UnitOfMeasureSet_ListID', $extra['ListID']);
 						break;
-					case 'unitofmeasureset_defaultunit':
-						$objects[$map[0]]->set('UnitOfMeasureSet_ListID', $extra['ListID']);
-						break;
-					case 'vendorcredit_linkedtxn':
+                    case 'vendorcredit_linkedtxn':
 						$objects[$map[0]]->set('FromTxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('VendorCredit_TxnID', $extra['TxnID']);
 						break;
-					case 'vendorcredit_expenseline':
+                    case 'vendorcredit_itemline':
+                    case 'vendorcredit_itemgroupline':
+                    case 'vendorcredit_expenseline':
 						$objects[$map[0]]->set('VendorCredit_TxnID', $extra['TxnID']);
 						break;
-					case 'vendorcredit_itemline':
-						$objects[$map[0]]->set('VendorCredit_TxnID', $extra['TxnID']);
-						break;
-					case 'vendorcredit_itemgroupline':
-						$objects[$map[0]]->set('VendorCredit_TxnID', $extra['TxnID']);
-						break;
-					case 'vendorcredit_itemgroupline_itemline':
+                    case 'vendorcredit_itemgroupline_itemline':
 						$objects[$map[0]]->set('VendorCredit_TxnID', $extra['TxnID']);
 						$objects[$map[0]]->set('VendorCredit_ItemGroupLine_TxnLineID', $extra['TxnLineID']);
 						break;
