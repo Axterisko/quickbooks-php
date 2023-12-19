@@ -10166,8 +10166,10 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
                         $forceUpdateTables = ['itemsites'];
 
-                        if(empty($extra['is_import_response']) && isset($callback_config['force_update_import_tables']) && is_array($callback_config['force_update_import_tables']))
+                        if(isset($callback_config['force_update_import_tables']) && is_array($callback_config['force_update_import_tables']))
                             $forceUpdateTables = array_merge($forceUpdateTables, $callback_config['force_update_import_tables']);
+
+//                        $Driver->log('Forced tables: '.print_r($callback_config, true));
 
                         if (/*empty($extra['is_import_response']) and*/
                             !in_array($table, $forceUpdateTables) and
