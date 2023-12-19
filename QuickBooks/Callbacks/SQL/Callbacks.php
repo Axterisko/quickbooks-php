@@ -10149,6 +10149,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						//print_r($object);
 						//print_r($tmp);
 
+
+
 						// If the EditSequence has not changed since the last time this record was updated,
 						//	then we can just skip this update because everything should already be up to
 						//	date.
@@ -10161,8 +10163,14 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						//	made will be overwritten/a conflict will occur *even though the Query response
 						//	was only due to a Mod request that we sent ourselves* and the record in
 						//	QuickBooks never actually changed between the Mod and the Query.
-						if (/*empty($extra['is_import_response']) and*/
-                            !in_array($table, ['itemsites']) and
+
+                        $forceUpdateTables = ['itemsites'];
+
+                        if(empty($extra['is_import_response']) && isset($callback_config['force_update_import_tables']) && is_array($callback_config['force_update_import_tables']))
+                            $forceUpdateTables = array_merge($forceUpdateTables, $callback_config['force_update_import_tables']);
+
+                        if (/*empty($extra['is_import_response']) and*/
+                            !in_array($table, $forceUpdateTables) and
                             empty($extra['is_query_response']) and 					// However, if is_query_response is set this was a forced-update (like when a balance updates, the EditSequence doesn't change but the record *does* need to be updated)
 							isset($tmp['EditSequence']) and 						// Check if EditSequence is set, qb_company doesn't have this field
 							$tmp['EditSequence'] == $object->get('EditSequence'))
@@ -10383,7 +10391,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					//	Receive Payment => reload any linked invoices
 					//	Invoice => reload the customer
 					//	Purchase Order => reload the vendor
-					QuickBooks_Callbacks_SQL_Callbacks::_triggerActions($user, $table, $Object, $action);
+                    QuickBooks_Callbacks_SQL_Callbacks::_triggerActions($user, $table, $Object, $action);
 				}
 			}
 		}
