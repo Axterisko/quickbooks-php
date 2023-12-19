@@ -95,6 +95,18 @@ class QuickBooks_Callbacks_SQL_Callbacks
 		// $map parameter
 		$sql_map = $callback_config['map'];
 
+
+        $custom_run_every = [];
+
+        if(isset($callback_config['custom_recur']) && $callback_config['custom_recur']){
+            foreach($callback_config['custom_recur'] as $how_often => $actions){
+                $recur = QuickBooks_Utilities::intervalToSeconds($how_often);
+                foreach($actions as $action){
+                    $custom_run_every[$action] = $recur;
+                }
+            }
+        }
+
 		// Which things do you want to query? (QuickBooks => SQL database)
 		/*
 		$sql_query = array();
@@ -180,35 +192,50 @@ class QuickBooks_Callbacks_SQL_Callbacks
 					//trigger_error('No registered handler for: ' . $action);
 					continue;
 				}
-
 				//$Queue->recurring($run_every, $action, md5(__FILE__), $priority, null, $user);
-				$Driver->recurEnqueue($user, $run_every, $action, md5(__FILE__), true, $priority);
+				$Driver->recurEnqueue($user, isset($custom_run_every[$action]) ? $custom_run_every[$action] : $run_every, $action, md5(__FILE__), true, $priority);
 
 				$actions[] = $action;
 			}
 
-			if (in_array(QUICKBOOKS_QUERY_DELETEDLISTS, $callback_config['_only_misc']))
-			{
-				// Also grab any deleted records
-				$Driver->queueEnqueue($user, QUICKBOOKS_QUERY_DELETEDLISTS, 1, true, 0);
-			}
 
-			if (in_array(QUICKBOOKS_QUERY_DELETEDTXNS, $callback_config['_only_misc']))
-			{
-				$Driver->queueEnqueue($user, QUICKBOOKS_QUERY_DELETEDTXNS, 1, true, 0);
-			}
+            foreach([
+                        QUICKBOOKS_QUERY_DELETEDLISTS,
+                        QUICKBOOKS_QUERY_DELETEDTXNS,
+                        QUICKBOOKS_DERIVE_INVENTORYLEVELS,
+                        QUICKBOOKS_DERIVE_INVENTORYASSEMBLYLEVELS,
+                    ] as $action){
+                if (in_array($action, $callback_config['_only_misc'])){
+                    $prev_sync_datetime = $Driver->configRead($user, __CLASS__, QuickBooks_Callbacks_SQL_Callbacks::_keySyncPrev($action), $type, $opts);
+                    if(!$prev_sync_datetime || (strtotime($prev_sync_datetime) + (isset($custom_run_every[$action]) ? $custom_run_every[$action] : $run_every) <= time()))
+                        $Driver->queueEnqueue($user, $action, 1, true, 0);
+                }
 
-			if (in_array(QUICKBOOKS_DERIVE_INVENTORYLEVELS, $callback_config['_only_misc']))
-			{
-				// Update inventory levels
-				$Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_INVENTORYLEVELS, 1, true, 0);
-			}
+            }
 
-			if (in_array(QUICKBOOKS_DERIVE_INVENTORYASSEMBLYLEVELS, $callback_config['_only_misc']))
-			{
-				// Update inventory assembly levels
-				$Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_INVENTORYASSEMBLYLEVELS, 1, true, 0);
-			}
+
+//			if (in_array(QUICKBOOKS_QUERY_DELETEDLISTS, $callback_config['_only_misc']))
+//			{
+//                // Also grab any deleted records
+//				$Driver->queueEnqueue($user, QUICKBOOKS_QUERY_DELETEDLISTS, 1, true, 0);
+//			}
+//
+//			if (in_array(QUICKBOOKS_QUERY_DELETEDTXNS, $callback_config['_only_misc']))
+//			{
+//				$Driver->queueEnqueue($user, QUICKBOOKS_QUERY_DELETEDTXNS, 1, true, 0);
+//			}
+//
+//			if (in_array(QUICKBOOKS_DERIVE_INVENTORYLEVELS, $callback_config['_only_misc']))
+//			{
+//				// Update inventory levels
+//				$Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_INVENTORYLEVELS, 1, true, 0);
+//			}
+//
+//			if (in_array(QUICKBOOKS_DERIVE_INVENTORYASSEMBLYLEVELS, $callback_config['_only_misc']))
+//			{
+//				// Update inventory assembly levels
+//				$Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_INVENTORYASSEMBLYLEVELS, 1, true, 0);
+//			}
 		}
 
 		//print('2 [' . (microtime(true) - $start) . ']' . "\n\n"); $start = microtime(true);
@@ -845,6 +872,8 @@ class QuickBooks_Callbacks_SQL_Callbacks
 			QuickBooks_Callbacks_SQL_Callbacks::_callHooks($hooks, QuickBooks_SQL::HOOK_SQL_INVENTORY, $requestID, $user, $err, $hook_data, $callback_config);
 		}
 
+        $Driver->configWrite($user, __CLASS__, QuickBooks_Callbacks_SQL_Callbacks::_keySyncPrev($action), date('Y-m-d') . 'T' . date('H:i:s'), null);
+
 		//print_r($items);
 
 		//$Driver->log('Inventory: ' . print_r($items, true), null, QUICKBOOKS_LOG_VERBOSE);
@@ -1030,6 +1059,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			QuickBooks_Callbacks_SQL_Callbacks::_callHooks($hooks, QuickBooks_SQL::HOOK_SQL_INVENTORYASSEMBLY, $requestID, $user, $err, $hook_data, $callback_config);
 		}
 
+        $Driver->configWrite($user, __CLASS__, QuickBooks_Callbacks_SQL_Callbacks::_keySyncPrev($action), date('Y-m-d') . 'T' . date('H:i:s'), null);
+
 		//print_r($items);
 
 		//$Driver->log('Inventory: ' . print_r($items, true), null, QUICKBOOKS_LOG_VERBOSE);
@@ -1210,6 +1241,8 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			}
 		}
 
+        $Driver->configWrite($user, __CLASS__, QuickBooks_Callbacks_SQL_Callbacks::_keySyncPrev($action), date('Y-m-d') . 'T' . date('H:i:s'), null);
+
 		return true;
 	}
 
@@ -1308,6 +1341,9 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			}
 
 		}
+
+        $Driver->configWrite($user, __CLASS__, QuickBooks_Callbacks_SQL_Callbacks::_keySyncPrev($action), date('Y-m-d') . 'T' . date('H:i:s'), null);
+
 		return true;
 	}
 
@@ -1752,7 +1788,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 						$Driver->update(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . $table,
 							$arr,
-							array( array( 'qbsql_id' => $ID ) ),
+							array( array( 'ListID' => $arr['ListID'] ) ),
 							true, 		// Don't mark as re-synced
 							false, 		// Don't update the discov time
 							true);		// Do mark it as re-derived
@@ -1761,25 +1797,10 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					break;
                 case QUICKBOOKS_OBJECT_SALESORDER:
 
-                    $arr = array(
-                        'IsFullyInvoiced' => (int) $Node->getChildDataAt('SalesOrderRet IsFullyInvoiced') == 'true',
-                        'IsManuallyClosed' => (int) $Node->getChildDataAt('SalesOrderRet IsManuallyClosed') == 'true',
-                        'IsToBeEmailed' =>  (int) $Node->getChildDataAt('SalesOrderRet IsToBeEmailed') == 'true',
-                        'IsToBePrinted' =>  (int) $Node->getChildDataAt('SalesOrderRet IsToBePrinted') == 'true',
-                    );
-
-                    $Driver->log('Updating DERIVED SALES ORDER fields: ' . print_r($arr, true) . ' where: ' . print_r($extra, true), null, QUICKBOOKS_LOG_VERBOSE);
-
-                    $Driver->update(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . 'salesorder',
-                        $arr,
-                        array( array( 'qbsql_id' => $ID ) ),
-                        true, 		// Don't mark as re-synced
-                        false, 		// Don't update the discov time
-                        true);		// Do mark it as re-derived
-
                     $List = $Node->children('SalesOrderLineRet');
 
                     foreach($List as $LineNode){
+
                         $arr = [
                             'SalesOrder_TxnID' =>  $Node->getChildDataAt('SalesOrderRet TxnID'),
                             'TxnLineID' => $LineNode->getChildDataAt('SalesOrderLineRet TxnLineID'),
@@ -1796,6 +1817,22 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
                             true);		// Do mark it as re-derived
                     }
 
+                    $arr = array(
+                        'IsFullyInvoiced' => (int) $Node->getChildDataAt('SalesOrderRet IsFullyInvoiced') == 'true',
+                        'IsManuallyClosed' => (int) $Node->getChildDataAt('SalesOrderRet IsManuallyClosed') == 'true',
+                        'IsToBeEmailed' =>  (int) $Node->getChildDataAt('SalesOrderRet IsToBeEmailed') == 'true',
+                        'IsToBePrinted' =>  (int) $Node->getChildDataAt('SalesOrderRet IsToBePrinted') == 'true',
+                    );
+
+                    $Driver->log('Updating DERIVED SALES ORDER fields: ' . print_r($arr, true) . ' where: ' . print_r($extra, true), null, QUICKBOOKS_LOG_VERBOSE);
+
+
+                    $Driver->update(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . 'salesorder',
+                        $arr,
+                        array( array( 'TxnID' => $Node->getChildDataAt('SalesOrderRet TxnID') ) ),
+                        true, 		// Don't mark as re-synced
+                        false, 		// Don't update the discov time
+                        true);		// Do mark it as re-derived
 
 
                     break;
@@ -1826,7 +1863,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 					$Driver->update(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . 'customer',
 						$arr,
-						array( array( 'qbsql_id' => $ID ) ),
+						array( array( 'ListID' => $arr['ListID'] ) ),
 						true, 		// Don't mark as re-synced
 						false, 		// Don't update the discov time
 						true);		// Do mark it as re-derived
@@ -1890,7 +1927,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 					$Driver->update(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . 'invoice',
 						$arr,
-						array( array( 'qbsql_id' => $ID ) ),
+						array( array( 'TxnID' => $arr['TxnID'] ) ),
 						true, 		// Don't mark as re-synced
 						false, 		// Don't update the discov time
 						true);		// Do mark it as re-derived
@@ -10125,6 +10162,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						//	was only due to a Mod request that we sent ourselves* and the record in
 						//	QuickBooks never actually changed between the Mod and the Query.
 						if (/*empty($extra['is_import_response']) and*/
+                            !in_array($table, ['itemsites']) and
                             empty($extra['is_query_response']) and 					// However, if is_query_response is set this was a forced-update (like when a balance updates, the EditSequence doesn't change but the record *does* need to be updated)
 							isset($tmp['EditSequence']) and 						// Check if EditSequence is set, qb_company doesn't have this field
 							$tmp['EditSequence'] == $object->get('EditSequence'))
@@ -10139,22 +10177,22 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 							$ignore_this_and_its_children = true;
 						}
 
-                        if($ignore_this_and_its_children){
-
-                            switch($table){
-                                case 'salesorder':
-
-                                    break;
-                                case 'salesorderline':
-
-                                    break;
-                                case 'iteminventory':
-                                case 'iteminventoryassembly':
-
-                                    break;
-                            }
-
-                        }
+//                        if($ignore_this_and_its_children){
+//
+//                            switch($table){
+//                                case 'salesorder':
+//
+//                                    break;
+//                                case 'salesorderline':
+//
+//                                    break;
+//                                case 'iteminventory':
+//                                case 'iteminventoryassembly':
+//
+//                                    break;
+//                            }
+//
+//                        }
 
 
 						if ($callback_config['mode'] == QuickBooks_WebConnector_Server_SQL::MODE_WRITEONLY)
