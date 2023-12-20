@@ -107,7 +107,7 @@ class QuickBooks_Callbacks_SQL_Callbacks
             }
         }
 
-        echo "<pre>".print_r($callback_config,true);exit();
+//        echo "<pre>".print_r($callback_config,true);exit();
 
 		// Which things do you want to query? (QuickBooks => SQL database)
 		/*
