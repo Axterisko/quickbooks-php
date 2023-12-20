@@ -107,6 +107,8 @@ class QuickBooks_Callbacks_SQL_Callbacks
             }
         }
 
+        echo "<pre>".print_r($callback_config,true);exit();
+
 		// Which things do you want to query? (QuickBooks => SQL database)
 		/*
 		$sql_query = array();
@@ -619,7 +621,7 @@ class QuickBooks_Callbacks_SQL_Callbacks
 			return $version;
 		}
 
-		return $locale . $version;
+		return (is_array($locale) ? implode(",",$locale) : $locale) . $version;
 	}
 
 	/**
@@ -6259,6 +6261,215 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 		return QuickBooks_Callbacks_SQL_Callbacks::CustomerImportResponse($requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
 	}
 
+    public static function SalesOrderQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
+    {
+        $tag1 = '';
+        $tag2 = '';
+        if (!empty($extra['TxnID']))
+        {
+            $extra['TxnID'] = is_array($extra['TxnID']) ? $extra['TxnID'] : [$extra['TxnID']];
+            $tag1 = '<TxnID>' . implode("</TxnID><TxnID>",$extra['TxnID']) . '</TxnID>';
+        }
+        else if (!empty($extra['RefNumber']))
+        {
+            $extra['RefNumber'] = is_array($extra['RefNumber']) ? $extra['RefNumber'] : [$extra['RefNumber']];
+            $tag1 = '<RefNumber>' . implode("</RefNumber><RefNumber>",$extra['RefNumber']) . '</RefNumber>';
+        }
+        else if (!empty($extra['RefNumberCaseSensitive']))
+        {
+            $extra['RefNumberCaseSensitive'] = is_array($extra['RefNumberCaseSensitive']) ? $extra['RefNumberCaseSensitive'] : [$extra['RefNumberCaseSensitive']];
+            $tag1 = '<RefNumberCaseSensitive>' . implode("</RefNumberCaseSensitive><RefNumberCaseSensitive>",$extra['RefNumberCaseSensitive']) . '</RefNumberCaseSensitive>';
+        }else if (!empty($extra['Entity_FullName']))
+        {
+            $tag2 = '';
+            if(!empty($extra['MaxReturned']))
+                $tag2 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
+
+            $tag2 .= '<EntityFilter>' . QUICKBOOKS_CRLF;
+            $tag2 .= "\t" . '<FullName>' . QuickBooks_Cast::cast(QUICKBOOKS_OBJECT_INVOICE, 'EntityFilter FullName', $extra['Entity_FullName']) . '</FullName>' . QUICKBOOKS_CRLF;
+            $tag2 .= '</EntityFilter>' . QUICKBOOKS_CRLF;
+        }
+        else if (!empty($extra['Entity_ListID']))
+        {
+            $tag2 = '';
+            if(!empty($extra['MaxReturned']))
+                $tag2 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
+            $tag2 .= '<EntityFilter>' . QUICKBOOKS_CRLF;
+            $tag2 .= "\t" . '<ListID>' . $extra['Entity_ListID'] . '</ListID>' . QUICKBOOKS_CRLF;
+            $tag2 .= '</EntityFilter>' . QUICKBOOKS_CRLF;
+        }
+        else if (!empty($extra['FromModifiedDate']) or
+            !empty($extra['ToModifiedDate']))
+        {
+            $tag2 = '';
+            if(!empty($extra['MaxReturned']))
+                $tag2 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
+            $tag2 = '<ModifiedDateRangeFilter>';
+            if(!empty($extra['FromModifiedDate']))
+                $tag2 .= '<FromModifiedDate>' . $extra['FromModifiedDate'] . '</FromModifiedDate>';
+            if(!empty($extra['ToModifiedDate']))
+                $tag2 .= '<ToModifiedDate>' . $extra['ToModifiedDate'] . '</ToModifiedDate>';
+            $tag2 .= '</ModifiedDateRangeFilter>';
+        }
+        else
+        {
+            return QUICKBOOKS_NOOP;
+        }
+
+        $xml = '<?xml version="1.0" encoding="utf-8"?>
+			<?qbxml version="' . QuickBooks_Callbacks_SQL_Callbacks::_version($version, $locale) . '"?>
+			<QBXML>
+				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
+					<SalesOrderQueryRq requestID="' . $requestID . '" >
+						' . $tag1 . '
+						' . $tag2 . '
+						<IncludeLineItems>true</IncludeLineItems>
+						' . QuickBooks_Callbacks_SQL_Callbacks::_requiredVersionForElement(1.1, $version, '<IncludeLinkedTxns>true</IncludeLinkedTxns>') . '
+						' . QuickBooks_Callbacks_SQL_Callbacks::_requiredVersionForElement(2.0, $version, '<OwnerID>0</OwnerID>') . '
+					</SalesOrderQueryRq>
+				</QBXMLMsgsRq>
+			</QBXML>';
+
+        return $xml;
+    }
+
+    public static function SalesOrderQueryResponse($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $xml, $idents, $config = array())
+    {
+        $extra['is_query_response'] = true;
+        return QuickBooks_Callbacks_SQL_Callbacks::SalesOrderImportResponse($requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+    }
+
+
+    public static function ItemQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
+    {
+        $tag1 = '';
+        $tag2 = '';
+        if (!empty($extra['ListID']))
+        {
+            $extra['ListID'] = is_array($extra['ListID']) ? $extra['ListID'] : [$extra['ListID']];
+            $tag1 = '<ListID>' . implode("</ListID><ListID>",$extra['ListID']) . '</ListID>';
+        }
+        else if (!empty($extra['FullName']))
+        {
+            $extra['FullName'] = is_array($extra['FullName']) ? $extra['FullName'] : [$extra['FullName']];
+            foreach($extra['FullName']  as $FullName)
+                $tag1 = '<FullName>' . QuickBooks_Cast::cast(QUICKBOOKS_OBJECT_ITEM, 'FullName', $FullName) . '</FullName>';
+        }
+        else if (!empty($extra['FromModifiedDate']) or
+            !empty($extra['ToModifiedDate']))
+        {
+            $tag2 = '';
+            if(!empty($extra['MaxReturned']))
+                $tag2 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
+            if(!empty($extra['ActiveStatus']))
+                $tag2 .= '<ActiveStatus>' . $extra['ActiveStatus'] . '</ActiveStatus>';
+            $tag2 = '<ModifiedDateRangeFilter>';
+            if(!empty($extra['FromModifiedDate']))
+                $tag2 .= '<FromModifiedDate>' . $extra['FromModifiedDate'] . '</FromModifiedDate>';
+            if(!empty($extra['ToModifiedDate']))
+                $tag2 .= '<ToModifiedDate>' . $extra['ToModifiedDate'] . '</ToModifiedDate>';
+            $tag2 .= '</ModifiedDateRangeFilter>';
+        }
+        else
+        {
+            return QUICKBOOKS_NOOP;
+        }
+
+        $xml = '<?xml version="1.0" encoding="utf-8"?>
+			<?qbxml version="' . QuickBooks_Callbacks_SQL_Callbacks::_version($version, $locale) . '"?>
+			<QBXML>
+				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
+					<ItemQueryRq requestID="' . $requestID . '" >
+						' . $tag1 . '
+						' . $tag2 . '
+						' . QuickBooks_Callbacks_SQL_Callbacks::_requiredVersionForElement(2.0, $version, '<OwnerID>0</OwnerID>') . '
+					</ItemQueryRq>
+				</QBXMLMsgsRq>
+			</QBXML>';
+
+        return $xml;
+    }
+
+    public static function ItemQueryResponse($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $xml, $idents, $config = array())
+    {
+        $extra['is_query_response'] = true;
+        return QuickBooks_Callbacks_SQL_Callbacks::ItemImportResponse($requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+    }
+
+    public static function ItemSitesQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
+    {
+//        if (!QuickBooks_Callbacks_SQL_Callbacks::_requiredVersion(10.0, $version))
+//        {
+//            return QUICKBOOKS_SKIP;
+//        }
+
+        $tag1 = '';
+        $tag2 = '';
+        $tag3 = '';
+        if (!empty($extra['ListID']))
+        {
+            $extra['ListID'] = is_array($extra['ListID']) ? $extra['ListID'] : [$extra['ListID']];
+            $tag1 = '<ListID>' . implode("</ListID>".QUICKBOOKS_CRLF."<ListID>",$extra['ListID']) . '</ListID>'.QUICKBOOKS_CRLF;
+        }
+        if(!empty($extra['ItemTypeFilter']))
+            $tag1 .= '<ItemTypeFilter>' . $extra['ItemTypeFilter'] . '</ItemTypeFilter>';
+
+        if(empty($extra['ListID'])) {
+            if (!empty($extra['Item_ListID'])) {
+                $tag2 .="<ItemFilter>".QUICKBOOKS_CRLF;
+                $tag2 .= "\t".'<ListID>' . implode("</ListID>".QUICKBOOKS_CRLF."<ListID>",$extra['Item_ListID']) . '</ListID>'.QUICKBOOKS_CRLF;
+                $tag2 .="</ItemFilter>";
+            }elseif(!empty($extra['Item_FullName'])){
+                $tag2 .="<ItemFilter>".QUICKBOOKS_CRLF;
+                $extra['Item_FullName'] = is_array($extra['Item_FullName']) ? $extra['Item_FullName'] : [$extra['Item_FullName']];
+                foreach($extra['Item_FullName']  as $FullName)
+                    $tag2 .= "\t".'<FullName>' . QuickBooks_Cast::cast(QUICKBOOKS_OBJECT_ITEM, 'FullName', $FullName) . '</FullName>'.QUICKBOOKS_CRLF;
+                $tag2 .="</ItemFilter>";
+            }
+
+            if (!empty($extra['Site_ListID'])) {
+                $tag2 .="<SiteFilter>".QUICKBOOKS_CRLF;
+                $tag2 .= "\t".'<ListID>' . implode("</ListID>".QUICKBOOKS_CRLF."<ListID>",$extra['Site_ListID']) . '</ListID>'.QUICKBOOKS_CRLF;
+                $tag2 .="</SiteFilter>";
+            }elseif(!empty($extra['Site_FullName'])){
+                $tag2 .="<SiteFilter>".QUICKBOOKS_CRLF;
+                $extra['Site_FullName'] = is_array($extra['Site_FullName']) ? $extra['Site_FullName'] : [$extra['Site_FullName']];
+                foreach($extra['Site_FullName']  as $FullName)
+                    $tag2 .= "\t".'<FullName>' . QuickBooks_Cast::cast(QUICKBOOKS_OBJECT_INVENTORYSITE, 'FullName', $FullName) . '</FullName>'.QUICKBOOKS_CRLF;
+                $tag2 .="</SiteFilter>";
+            }
+        }
+        if(trim($tag2)) $tag2="<ItemSiteFilter>".QUICKBOOKS_CRLF."\t{$tag2}".QUICKBOOKS_CRLF."</ItemSiteFilter>";
+
+
+        if(!trim($tag1) && !trim($tag2)) return QUICKBOOKS_NOOP;
+
+        if(!empty($extra['MaxReturned']))
+            $tag3 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
+        if(!empty($extra['ActiveStatus']))
+            $tag3 .= '<ActiveStatus>' . $extra['ActiveStatus'] . '</ActiveStatus>';
+
+        $xml = '<?xml version="1.0" encoding="utf-8"?>
+			<?qbxml version="' . QuickBooks_Callbacks_SQL_Callbacks::_version($version, $locale) . '"?>
+			<QBXML>
+				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
+					<ItemSitesQueryRq requestID="' . $requestID . '" >
+						' . $tag1 . '
+						' . $tag2 . '
+						' . $tag3 . '
+					</ItemSitesQueryRq>
+				</QBXMLMsgsRq>
+			</QBXML>';
+
+        return $xml;
+    }
+
+    public static function ItemSitesQueryResponse($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $xml, $idents, $config = array())
+    {
+        $extra['is_query_response'] = true;
+        return QuickBooks_Callbacks_SQL_Callbacks::ItemSitesImportResponse($requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+    }
+
 	public static function CustomerTypeImportRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
 	{
 		$xml = '';
@@ -6673,7 +6884,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
             $extra['is_import_response'] = true;
         }
 
-        QuickBooks_Callbacks_SQL_Callbacks::_QueryResponse('itemsites', $List, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+        return QuickBooks_Callbacks_SQL_Callbacks::_QueryResponse('itemsites', $List, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
     }
 
 	public static function InvoiceImportRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
@@ -6732,42 +6943,53 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 		$tag1 = '';
 		$tag2 = '';
 
-		if (!empty($extra['TxnID']))
-		{
-			$tag1 = '';
-			$tag1 .= '<TxnID>' . $extra['TxnID'] . '</TxnID>';
-		}
-		else if (!empty($extra['RefNumber']))
-		{
-			$tag1 = '';
-			$tag1 .= '<RefNumber>' . $extra['RefNumber'] . '</RefNumber>';
-		}
+        if (!empty($extra['TxnID']))
+        {
+            $extra['TxnID'] = is_array($extra['TxnID']) ? $extra['TxnID'] : [$extra['TxnID']];
+            $tag1 = '<TxnID>' . implode("</TxnID><TxnID>",$extra['TxnID']) . '</TxnID>';
+        }
+        else if (!empty($extra['RefNumber']))
+        {
+            $extra['RefNumber'] = is_array($extra['RefNumber']) ? $extra['RefNumber'] : [$extra['RefNumber']];
+            $tag1 = '<RefNumber>' . implode("</RefNumber><RefNumber>",$extra['RefNumber']) . '</RefNumber>';
+        }
+        else if (!empty($extra['RefNumberCaseSensitive']))
+        {
+            $extra['RefNumberCaseSensitive'] = is_array($extra['RefNumberCaseSensitive']) ? $extra['RefNumberCaseSensitive'] : [$extra['RefNumberCaseSensitive']];
+            $tag1 = '<RefNumberCaseSensitive>' . implode("</RefNumberCaseSensitive><RefNumberCaseSensitive>",$extra['RefNumberCaseSensitive']) . '</RefNumberCaseSensitive>';
+        }
 		else if (!empty($extra['Entity_FullName']))
 		{
 			$tag2 = '';
-			$tag2 .= '<MaxReturned>' . QUICKBOOKS_SERVER_SQL_ITERATOR_MAXRETURNED . '</MaxReturned>';
-			$tag2 .= '<EntityFilter>' . QUICKBOOKS_CRLF;
+            if(!empty($extra['MaxReturned']))
+                $tag2 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
+
+            $tag2 .= '<EntityFilter>' . QUICKBOOKS_CRLF;
 			$tag2 .= "\t" . '<FullName>' . QuickBooks_Cast::cast(QUICKBOOKS_OBJECT_INVOICE, 'EntityFilter FullName', $extra['Entity_FullName']) . '</FullName>' . QUICKBOOKS_CRLF;
 			$tag2 .= '</EntityFilter>' . QUICKBOOKS_CRLF;
 		}
 		else if (!empty($extra['Entity_ListID']))
 		{
 			$tag2 = '';
-			$tag2 .= '<MaxReturned>' . QUICKBOOKS_SERVER_SQL_ITERATOR_MAXRETURNED . '</MaxReturned>';
+            if(!empty($extra['MaxReturned']))
+                $tag2 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
 			$tag2 .= '<EntityFilter>' . QUICKBOOKS_CRLF;
 			$tag2 .= "\t" . '<ListID>' . $extra['Entity_ListID'] . '</ListID>' . QUICKBOOKS_CRLF;
 			$tag2 .= '</EntityFilter>' . QUICKBOOKS_CRLF;
 		}
-		else if (!empty($extra['FromModifiedDate']) and
-			!empty($extra['ToModifiedDate']))
-		{
-			$tag2 = '';
-			$tag2 .= '<MaxReturned>' . QUICKBOOKS_SERVER_SQL_ITERATOR_MAXRETURNED . '</MaxReturned>';
-			$tag2 .= '<ModifiedDateRangeFilter>' . QUICKBOOKS_CRLF;
-			$tag2 .= "\t" . '<FromModifiedDate>' . QuickBooks_Utilities::datetime($extra['FromModifiedDate']) . '</FromModifiedDate>' . QUICKBOOKS_CRLF;
-			$tag2 .= "\t" . '<ToModifiedDate>' . QuickBooks_Utilities::datetime($extra['ToModifiedDate']) . '</ToModifiedDate>' . QUICKBOOKS_CRLF;
-			$tag2 .= '</ModifiedDateRangeFilter>' . QUICKBOOKS_CRLF;
-		}
+        else if (!empty($extra['FromModifiedDate']) or
+            !empty($extra['ToModifiedDate']))
+        {
+            $tag2 = '';
+            if(!empty($extra['MaxReturned']))
+                $tag2 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
+            $tag2 .= '<ModifiedDateRangeFilter>';
+            if(!empty($extra['FromModifiedDate']))
+                $tag2 .= '<FromModifiedDate>' . QuickBooks_Utilities::datetime($extra['FromModifiedDate']) . '</FromModifiedDate>';
+            if(!empty($extra['ToModifiedDate']))
+                $tag2 .= '<ToModifiedDate>' . QuickBooks_Utilities::datetime($extra['ToModifiedDate']) . '</ToModifiedDate>';
+            $tag2 .= '</ModifiedDateRangeFilter>';
+        }
 		else
 		{
 			return QUICKBOOKS_NOOP;
@@ -7071,7 +7293,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			$extra['is_import_response'] = true;
 		}
 
-		QuickBooks_Callbacks_SQL_Callbacks::_QueryResponse(QUICKBOOKS_OBJECT_ITEM, $List, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+		return QuickBooks_Callbacks_SQL_Callbacks::_QueryResponse(QUICKBOOKS_OBJECT_ITEM, $List, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
 	}
 
 
@@ -7603,7 +7825,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 		$List = $Root->getChildAt('QBXML QBXMLMsgsRs SalesOrderQueryRs');
 
 		$extra['is_import_response'] = true;
-		QuickBooks_Callbacks_SQL_Callbacks::_QueryResponse('salesorder', $List, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+		return QuickBooks_Callbacks_SQL_Callbacks::_QueryResponse('salesorder', $List, $requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
 	}
 
 	/**
@@ -10164,15 +10386,14 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 						//	was only due to a Mod request that we sent ourselves* and the record in
 						//	QuickBooks never actually changed between the Mod and the Query.
 
-                        $forceUpdateTables = ['itemsites'];
-
-                        if(isset($callback_config['force_update_import_tables']) && is_array($callback_config['force_update_import_tables']))
-                            $forceUpdateTables = array_merge($forceUpdateTables, $callback_config['force_update_import_tables']);
+//                        $forceUpdateTables = ['itemsites'];
+//
+//                        if(isset($callback_config['force_update_import_tables']) && is_array($callback_config['force_update_import_tables']))
+//                            $forceUpdateTables = array_merge($forceUpdateTables, $callback_config['force_update_import_tables']);
 
 //                        $Driver->log('Forced tables: '.print_r($callback_config, true));
 
                         if (/*empty($extra['is_import_response']) and*/
-                            !in_array($table, $forceUpdateTables) and
                             empty($extra['is_query_response']) and 					// However, if is_query_response is set this was a forced-update (like when a balance updates, the EditSequence doesn't change but the record *does* need to be updated)
 							isset($tmp['EditSequence']) and 						// Check if EditSequence is set, qb_company doesn't have this field
 							$tmp['EditSequence'] == $object->get('EditSequence'))
@@ -10438,6 +10659,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			// Start of the iteration, update the previous timestamp to NOW
 			$Driver->configWrite($user, $module, QuickBooks_Callbacks_SQL_Callbacks::_keySyncPrev($action), $curr_sync_datetime, null);
 		}
+        return true;
 	}
 
 	/**

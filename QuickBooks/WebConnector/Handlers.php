@@ -810,7 +810,7 @@ class QuickBooks_WebConnector_Handlers
 
 					return new QuickBooks_WebConnector_Result_SendRequestXML('');
 				}
-
+                $xml = QuickBooks_Utilities::prettyXmlString($xml);
 				// If the requestID="..." attribute was not specified, we can try to automatically add it to the request
 				$requestID = null;
 				if (!($requestID = $this->_extractRequestID($xml)) and
