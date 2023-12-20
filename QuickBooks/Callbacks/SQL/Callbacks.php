@@ -655,7 +655,7 @@ class QuickBooks_Callbacks_SQL_Callbacks
 	 * @param mixed $extra 		The $extra value that is passed to the method you're calling this from
 	 * @return string
 	 */
-	protected static function _buildIterator($extra, $version = null, $locale = null)
+	protected static function _buildIterator($extra, $version = null, $locale = null, $maxreturned = true)
 	{
 		$xml = "";
 
@@ -674,21 +674,21 @@ class QuickBooks_Callbacks_SQL_Callbacks
 			$xml .= ' iterator="Start" ';
 		}
 
-		$xml .= '>' . "\n";
-		$xml .= "\t" . '<MaxReturned>';
+        if($maxreturned) {
+    		$xml .= '>' . "\n";
+            $xml .= "\t" . '<MaxReturned>';
 
-		if (is_array($extra) and
-			!empty($extra['maxReturned']))
-		{
-			$xml .= $extra['maxReturned'];
-		}
-		else
-		{
-			$xml .= QUICKBOOKS_SERVER_SQL_ITERATOR_MAXRETURNED;
-		}
+            if (!empty($extra['maxReturned'])) $extra['MaxReturned'] = $extra['maxReturned'];
 
-		$xml .= '</MaxReturned';
+            if (is_array($extra) and
+                !empty($extra['MaxReturned'])) {
+                $xml .= $extra['MaxReturned'];
+            } else {
+                $xml .= QUICKBOOKS_SERVER_SQL_ITERATOR_MAXRETURNED;
+            }
 
+            $xml .= '</MaxReturned';
+        }
 		return $xml;
 	}
 
@@ -1632,7 +1632,9 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 	public static function ItemDeriveRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
 	{
-		$xml = '';
+        $err = null;
+        return QuickBooks_Callbacks_SQL_Callbacks::ItemQueryRequest($requestID, $user, $action, $ID, $extra,$err, $last_action_time, $last_actionident_time, $version, $locale, $config);
+		/*$xml = '';
 
 
 		$xml .= '<?xml version="1.0" encoding="utf-8"?>
@@ -1645,7 +1647,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 				</QBXMLMsgsRq>
 			</QBXML>';
 
-		return $xml;
+		return $xml;*/
 	}
 
 	public static function ItemDeriveResponse($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $xml, $idents, $config = array() )
@@ -6263,8 +6265,15 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
     public static function SalesOrderQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
     {
+
+        $iterator = '';
+        if(!empty($extra['MaxReturned']))
+            $iterator = QuickBooks_Callbacks_SQL_Callbacks::_buildIterator($extra, $version, $locale, false);
+
         $tag1 = '';
         $tag2 = '';
+
+
         if (!empty($extra['TxnID']))
         {
             $extra['TxnID'] = is_array($extra['TxnID']) ? $extra['TxnID'] : [$extra['TxnID']];
@@ -6313,14 +6322,14 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
         }
         else
         {
-            return QUICKBOOKS_NOOP;
+            if(!$iterator) return QUICKBOOKS_NOOP;
         }
 
         $xml = '<?xml version="1.0" encoding="utf-8"?>
 			<?qbxml version="' . QuickBooks_Callbacks_SQL_Callbacks::_version($version, $locale) . '"?>
 			<QBXML>
 				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
-					<SalesOrderQueryRq requestID="' . $requestID . '" >
+					<SalesOrderQueryRq requestID="' . $requestID . '" ' . $iterator . '>
 						' . $tag1 . '
 						' . $tag2 . '
 						<IncludeLineItems>true</IncludeLineItems>
@@ -6342,6 +6351,10 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
     public static function ItemQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
     {
+        $iterator = '';
+        if(!empty($extra['MaxReturned']))
+            $iterator = QuickBooks_Callbacks_SQL_Callbacks::_buildIterator($extra, $version, $locale, false);
+
         $tag1 = '';
         $tag2 = '';
         if (!empty($extra['ListID']))
@@ -6372,14 +6385,15 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
         }
         else
         {
-            return QUICKBOOKS_NOOP;
+            if(!$iterator)
+                return QUICKBOOKS_NOOP;
         }
 
         $xml = '<?xml version="1.0" encoding="utf-8"?>
 			<?qbxml version="' . QuickBooks_Callbacks_SQL_Callbacks::_version($version, $locale) . '"?>
 			<QBXML>
 				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
-					<ItemQueryRq requestID="' . $requestID . '" >
+					<ItemQueryRq requestID="' . $requestID . '" ' . $iterator . '>
 						' . $tag1 . '
 						' . $tag2 . '
 						' . QuickBooks_Callbacks_SQL_Callbacks::_requiredVersionForElement(2.0, $version, '<OwnerID>0</OwnerID>') . '
@@ -6398,10 +6412,13 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
     public static function ItemSitesQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
     {
-//        if (!QuickBooks_Callbacks_SQL_Callbacks::_requiredVersion(10.0, $version))
-//        {
-//            return QUICKBOOKS_SKIP;
-//        }
+        if (!QuickBooks_Callbacks_SQL_Callbacks::_requiredVersion(10.0, $version))
+        {
+            return QUICKBOOKS_SKIP;
+        }
+        $iterator = '';
+        if(!empty($extra['MaxReturned']))
+            $iterator = QuickBooks_Callbacks_SQL_Callbacks::_buildIterator($extra, $version, $locale, false);
 
         $tag1 = '';
         $tag2 = '';
@@ -6442,7 +6459,10 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
         if(trim($tag2)) $tag2="<ItemSiteFilter>".QUICKBOOKS_CRLF."\t{$tag2}".QUICKBOOKS_CRLF."</ItemSiteFilter>";
 
 
-        if(!trim($tag1) && !trim($tag2)) return QUICKBOOKS_NOOP;
+        if(!trim($tag1) && !trim($tag2)){
+            if(!$iterator)
+                return QUICKBOOKS_NOOP;
+        }
 
         if(!empty($extra['MaxReturned']))
             $tag3 .= '<MaxReturned>' . intval($extra['MaxReturned']) . '</MaxReturned>';
@@ -6453,7 +6473,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 			<?qbxml version="' . QuickBooks_Callbacks_SQL_Callbacks::_version($version, $locale) . '"?>
 			<QBXML>
 				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
-					<ItemSitesQueryRq requestID="' . $requestID . '" >
+					<ItemSitesQueryRq requestID="' . $requestID . '" ' . $iterator . ' >
 						' . $tag1 . '
 						' . $tag2 . '
 						' . $tag3 . '
@@ -6939,6 +6959,9 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 	public static function InvoiceQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
 	{
 		$xml = '';
+        $iterator = '';
+        if(!empty($extra['MaxReturned']))
+            $iterator = QuickBooks_Callbacks_SQL_Callbacks::_buildIterator($extra, $version, $locale, false);
 
 		$tag1 = '';
 		$tag2 = '';
@@ -6992,18 +7015,16 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
         }
 		else
 		{
-			return QUICKBOOKS_NOOP;
+			if(!$iterator)
+                return QUICKBOOKS_NOOP;
 		}
 
-		// <MaxReturned>' . QUICKBOOKS_SERVER_SQL_ITERATOR_MAXRETURNED . '</MaxReturned>
-
-		//  ' . QuickBooks_Callbacks_SQL_Callbacks::_buildIterator($extra) . '
 
 		$xml .= '<?xml version="1.0" encoding="utf-8"?>
 			<?qbxml version="' . $version . '"?>
 			<QBXML>
 				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
-					<InvoiceQueryRq requestID="' . $requestID . '">
+					<InvoiceQueryRq requestID="' . $requestID . '" ' . $iterator . '>
 						' . $tag1 . '
 						' . $tag2 . '
 						<IncludeLineItems>true</IncludeLineItems>
@@ -10614,7 +10635,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 					//	Receive Payment => reload any linked invoices
 					//	Invoice => reload the customer
 					//	Purchase Order => reload the vendor
-                    QuickBooks_Callbacks_SQL_Callbacks::_triggerActions($user, $table, $Object, $action);
+                    QuickBooks_Callbacks_SQL_Callbacks::_triggerActions($user, $table, $Object, $Node, $action);
 				}
 			}
 		}
@@ -10666,7 +10687,7 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 	 *
 	 *
 	 */
-	protected static function _triggerActions($user, $table, $Object, $action = null)
+	protected static function _triggerActions($user, $table, $Object, $XmlNode, $action = null)
 	{
 		$Driver = QuickBooks_Driver_Singleton::getInstance();
 
@@ -10743,32 +10764,28 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 
 				break;
             case 'salesorder':
-                $Driver->log('Running salesorder triggered actions: derive item', null, QUICKBOOKS_LOG_DEBUG);
-
                 $ArrListID = [];
+                $List = $XmlNode->children('SalesOrderLineRet');
+                foreach($List as $LineNode) $ArrListID[] = $LineNode->getChildDataAt('SalesOrderLineRet ItemRef ListID');
 
-                $res = $Driver->query(sprintf("SELECT DISTINCT Item_ListID FROM ".QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . "salesorder_salesorderline WHERE SalesOrder_TxnID = \"%s\" ORDER BY qbsql_id ASC",$Object->get('TxnID')), $errnum, $errmsg);
-                while ($arr = $Driver->fetch($res)) $ArrListID[] = $arr['Item_ListID'];
-                $res = $Driver->query(sprintf("SELECT DISTINCT Item_ListID FROM ".QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . "salesorder_salesorderlinegroup_salesorderline WHERE SalesOrder_TxnID = \"%s\" ORDER BY qbsql_id ASC",$Object->get('TxnID')), $errnum, $errmsg);
-                while ($arr = $Driver->fetch($res)) $ArrListID[] = $arr['Item_ListID'];
+                $ArrListID = array_unique($ArrListID);
+                if($ArrListID) {
+                    $Driver->log('Running sales order triggered actions: derive item ' . print_r($ArrListID, true), null, QUICKBOOKS_LOG_DEBUG);
+                    $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_ITEM, null, true, $priority, array('ListID' => $ArrListID ) );
+                }
 
-                foreach(array_unique($ArrListID) as $ListID)
-                    $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_ITEM, null, true, $priority, array( 'ListID' => $ListID ) );
                 break;
 
             case 'purchaseorder':
-                $Driver->log('Running purchaseorder triggered actions: derive item', null, QUICKBOOKS_LOG_DEBUG);
-
                 $ArrListID = [];
+                $List = $XmlNode->children('PurchaseOrderLineRet');
+                foreach($List as $LineNode) $ArrListID[] = $LineNode->getChildDataAt('PurchaseOrderLineRet ItemRef ListID');
 
-                $res = $Driver->query(sprintf("SELECT DISTINCT Item_ListID FROM ".QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . "purchaseorder_purchaseorderline WHERE PurchaseOrder_TxnID = \"%s\" ORDER BY qbsql_id ASC",$Object->get('TxnID')), $errnum, $errmsg);
-                while ($arr = $Driver->fetch($res)) $ArrListID[] = $arr['Item_ListID'];
-                $res = $Driver->query(sprintf("SELECT DISTINCT Item_ListID FROM ".QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . "purchaseorder_purchaseorderlinegroup_purchaseorderline WHERE PurchaseOrder_TxnID = \"%s\" ORDER BY qbsql_id ASC",$Object->get('TxnID')), $errnum, $errmsg);
-                while ($arr = $Driver->fetch($res)) $ArrListID[] = $arr['Item_ListID'];
-
-                foreach(array_unique($ArrListID) as $ListID)
-                    $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_ITEM, null, true, $priority, array( 'ListID' => $ListID ) );
-                break;
+                $ArrListID = array_unique($ArrListID);
+                if($ArrListID) {
+                    $Driver->log('Running purchase order triggered actions: derive item ' . print_r($ArrListID, true), null, QUICKBOOKS_LOG_DEBUG);
+                    $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_ITEM, null, true, $priority, array( 'ListID' => $ArrListID ) );
+                }
 		}
 	}
 

@@ -1586,8 +1586,8 @@ class QuickBooks_WebConnector_Handlers
 	 */
 	public function getLastError($obj)
 	{
-		//$this->_driver->log('getLastError()', $obj->ticket, QUICKBOOKS_LOG_VERBOSE);
-		$this->_log('getLastError()', $obj->ticket, QUICKBOOKS_LOG_VERBOSE);
+
+//		$this->_driver->log('getLastError()', $obj->ticket, QUICKBOOKS_LOG_VERBOSE);
 
 		if ($this->_driver->authCheck($obj->ticket))
 		{
@@ -1601,9 +1601,11 @@ class QuickBooks_WebConnector_Handlers
 			$this->_callHook($obj->ticket, QUICKBOOKS_HANDLERS_HOOK_GETLASTERROR, null, null, null, null, $hookerr, null, array(), $hookdata);
 
 			$lasterr = $this->_driver->errorLast($obj->ticket);
+            $this->_driver->log('getLastError() / '.$lasterr, $obj->ticket, QUICKBOOKS_LOG_VERBOSE);
 
 			return new QuickBooks_WebConnector_Result_GetLastError($lasterr);
 		}
+        $this->_driver->log('getLastError() / Bad ticket.', $obj->ticket, QUICKBOOKS_LOG_VERBOSE);
 
 		return new QuickBooks_WebConnector_Result_GetLastError('Bad ticket.');
 	}
