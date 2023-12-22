@@ -10747,11 +10747,14 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 				$Driver->log('Running '.$table.' triggered actions: derive customer', null, QUICKBOOKS_LOG_DEBUG);
 				$Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_CUSTOMER, null, true, $priority,array( 'ListID' => $Object->get('Customer_ListID') ) );
 
-                if($table == 'invoice' && ($arr = $Driver->get(QUICKBOOKS_DRIVER_SQL_PREFIX_SQL . 'invoice_linkedtxn', [
-                        'Invoice_TxnID' => $Object->get('TxnID'),
-                        'TxnType' => 'SalesOrder'
-                    ]))){
-                    $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_SALESORDER, null, true, $priority, array( 'TxnID' => $arr['ToTxnID'] ) );
+                if($table == 'invoice'){
+                    $TxnID = $XmlNode->getChildDataAt('InvoiceRet LinkedTxn TxnID');
+                    $TxnType = $XmlNode->getChildDataAt('InvoiceRet LinkedTxn TxnType');
+
+                    if($TxnType == 'SalesOrder') {
+                        $Driver->log('Running '.$table.' triggered actions: derive salesorder', null, QUICKBOOKS_LOG_DEBUG);
+                        $Driver->queueEnqueue($user, QUICKBOOKS_DERIVE_SALESORDER, null, true, $priority, array('TxnID' => $TxnID));
+                    }
                 }
 
 
