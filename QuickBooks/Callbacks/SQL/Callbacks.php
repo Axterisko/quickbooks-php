@@ -6262,7 +6262,46 @@ public static function InventoryAssemblyLevelsRequest($requestID, $user, $action
 		$extra['is_query_response'] = true;
 		return QuickBooks_Callbacks_SQL_Callbacks::CustomerImportResponse($requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
 	}
+public static function SalesRepQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
+    {
+        if (!empty($extra['ListID']))
+        {
+            $tag = '<ListID>' . $extra['ListID'] . '</ListID>';
+        }
+        else if (!empty($extra['FullName']))
+        {
+            $tag = '<FullName>' . QuickBooks_Cast::cast(QUICKBOOKS_OBJECT_CUSTOMER, 'FullName', $extra['FullName']) . '</FullName>';
+        }
+        else if (!empty($extra['FromModifiedDate']) and
+            !empty($extra['ToModifiedDate']))
+        {
+            $tag = '';
+            $tag .= '<FromModifiedDate>' . $extra['FromModifiedDate'] . '</FromModifiedDate>';
+            $tag .= '<ToModifiedDate>' . $extra['ToModifiedDate'] . '</ToModifiedDate>';
+        }
+        else
+        {
+            return QUICKBOOKS_NOOP;
+        }
 
+        $xml = '<?xml version="1.0" encoding="utf-8"?>
+			<?qbxml version="' . QuickBooks_Callbacks_SQL_Callbacks::_version($version, $locale) . '"?>
+			<QBXML>
+				<QBXMLMsgsRq onError="' . QUICKBOOKS_SERVER_SQL_ON_ERROR . '">
+					<SalesRepQueryRq>
+						' . $tag . '
+					</SalesRepQueryRq>
+				</QBXMLMsgsRq>
+			</QBXML>';
+
+        return $xml;
+    }
+
+    public static function SalesRepQueryResponse($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $xml, $idents, $config = array())
+    {
+        $extra['is_query_response'] = true;
+        return QuickBooks_Callbacks_SQL_Callbacks::SalesRepImportResponse($requestID, $user, $action, $ID, $extra, $err, $last_action_time, $last_actionident_time, $xml, $idents, $config);
+    }
     public static function SalesOrderQueryRequest($requestID, $user, $action, $ID, $extra, &$err, $last_action_time, $last_actionident_time, $version, $locale, $config = array())
     {
 
