@@ -6270,7 +6270,7 @@ public static function SalesRepQueryRequest($requestID, $user, $action, $ID, $ex
         }
         else if (!empty($extra['FullName']))
         {
-            $tag = '<FullName>' . QuickBooks_Cast::cast(QUICKBOOKS_OBJECT_CUSTOMER, 'FullName', $extra['FullName']) . '</FullName>';
+            $tag = '<FullName>' . QuickBooks_Cast::cast(QUICKBOOKS_OBJECT_SALESREP, 'FullName', $extra['FullName']) . '</FullName>';
         }
         else if (!empty($extra['FromModifiedDate']) and
             !empty($extra['ToModifiedDate']))
