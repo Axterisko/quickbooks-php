@@ -433,8 +433,9 @@ class QuickBooks_XML
 			'&quot;' => '"', 
 			'&amp;' => '&', 		// Make sure that this is *the last* transformation to run, otherwise we end up double-un-encoding things
 			);
-			
-		return str_replace(array_keys($transform), array_values($transform), $str);		
+
+		$str = !empty($str) ? $str : "";
+		return str_replace(array_keys($transform), array_values($transform), $str);
 	}
 }
 
