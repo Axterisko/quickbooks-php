@@ -438,7 +438,7 @@ class QuickBooks_Driver_Sql_Mysqli extends QuickBooks_Driver_Sql
 			$str = '';
 		}
 
-		return $this->_conn->real_escape_string($str);
+		return $this->_conn->real_escape_string(isset($str) ? $str : '');
 	}
 
 	/**

@@ -376,7 +376,7 @@ class QuickBooks_XML_Backend_Builtin implements QuickBooks_XML_Backend
 				$Node->addAttribute($key, $value);
 			}
 
-			$payload = !empty($payload) ? $payload : "";
+			$payload = isset($payload) ? $payload : "";
 			if (false !== strpos($payload, '<'))
 			{
 				// The tag contains child tags 
