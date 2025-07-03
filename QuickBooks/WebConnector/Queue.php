@@ -232,6 +232,7 @@ class QuickBooks_WebConnector_Queue
 				$user = $this->_user;
 			}
 			
+			$ident = isset($ident) ? $ident : "";
 			return $this->_driver->queueEnqueue($user, $action, substr($ident, 0, 40), $replace, $priority, $extra, $qbxml);
 		}
 		
