@@ -60,6 +60,7 @@ class QuickBooks_WebConnector_Queue
 	 * @var string
 	 */
 	protected $_user;
+	protected $_driver;
 	
 	/**
 	 * Create a new QuickBooks queue instance
@@ -207,7 +208,7 @@ class QuickBooks_WebConnector_Queue
 	 */	
 	public function enqueue($action, $ident = null, $priority = 0, $extra = null, $user = null, $qbxml = null, $replace = true)
 	{
-		if (!strlen($ident))
+		if (!empty($ident) && !strlen($ident))
 		{
 			// If they didn't provide an $ident, generate a random, unique one
 			
@@ -231,6 +232,7 @@ class QuickBooks_WebConnector_Queue
 				$user = $this->_user;
 			}
 			
+			$ident = isset($ident) ? $ident : "";
 			return $this->_driver->queueEnqueue($user, $action, substr($ident, 0, 40), $replace, $priority, $extra, $qbxml);
 		}
 		

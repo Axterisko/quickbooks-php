@@ -520,6 +520,7 @@ class QuickBooks_WebConnector_Handlers
 
 		// Custom authentication backends
 		$override_dsn = $this->_config['authenticate'];
+		$override_dsn = !empty($override_dsn) ? $override_dsn : "";
 
 		if (!empty($this->_config['authenticate_dsn']))
 		{
