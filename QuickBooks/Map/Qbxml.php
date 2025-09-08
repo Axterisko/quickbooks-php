@@ -246,7 +246,7 @@ class QuickBooks_Map_Qbxml extends QuickBooks_Map
 
 				while ($arr = $Driver->fetch($res))
 				{
-					if (strlen($arr[QUICKBOOKS_DRIVER_SQL_FIELD_ERROR_NUMBER]))
+					if (strlen($arr[QUICKBOOKS_DRIVER_SQL_FIELD_ERROR_NUMBER]??''))
 					{
 						continue;
 					}
